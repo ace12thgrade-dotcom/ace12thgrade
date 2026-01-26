@@ -8,12 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
-      // Shim to prevent "process is not defined" error in production
-      window.process = {
-        env: {
-          API_KEY: "" // Will be injected by the environment
-        }
-      };
+      // Safe process shim for production environments
+      if (typeof window !== 'undefined' && !window.process) {
+        window.process = { env: {} };
+      }
     </script>
     <style>
         :root {
@@ -55,14 +53,6 @@
         .premium-card:hover {
             box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.05);
             transform: translateY(-4px);
-        }
-        @keyframes subtle-float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-subtle-float {
-            animation: subtle-float 6s ease-in-out infinite;
         }
     </style>
 <script type="importmap">
