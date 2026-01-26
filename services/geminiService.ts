@@ -1,14 +1,13 @@
 
 import { GoogleGenAI, Modality } from "@google/genai";
 
+// Always create a new instance or use the direct process.env.API_KEY reference as per rules.
 const getAI = () => {
-  // Try to find API key in various possible locations
-  const key = process.env.API_KEY || (window as any).process?.env?.API_KEY;
-  
-  if (!key) {
-    throw new Error("API Key is not configured. Please check your deployment settings.");
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please check your environment variables.");
   }
-  return new GoogleGenAI({ apiKey: key });
+  return new GoogleGenAI({ apiKey });
 };
 
 export const generateDetailedNotes = async (subject: string, chapter: string) => {
@@ -29,7 +28,7 @@ export const generateDetailedNotes = async (subject: string, chapter: string) =>
   3. Include every NCERT topic.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-flash-latest', // Using the most stable flash model for high-volume text
     contents: prompt,
   });
   
@@ -47,7 +46,7 @@ export const generatePremiumPYQs = async (subject: string, chapter: string) => {
   STRICT: NO $ SYMBOLS. Use [CBSE YEAR] tags.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-flash-latest',
     contents: prompt,
   });
   
