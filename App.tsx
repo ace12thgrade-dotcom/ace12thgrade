@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import Sidebar from './components/Sidebar';
-import SubjectDashboard from './components/SubjectDashboard';
-import ChatInterface from './components/ChatInterface';
-import { SUBJECTS } from './constants';
-import { SubjectId } from './types';
+import Sidebar from './components/Sidebar.tsx';
+import SubjectDashboard from './components/SubjectDashboard.tsx';
+import ChatInterface from './components/ChatInterface.tsx';
+import { SUBJECTS } from './constants.tsx';
+import { SubjectId } from './types.ts';
 
 const App: React.FC = () => {
   const [activeSubjectId, setActiveSubjectId] = useState<SubjectId>('physics');

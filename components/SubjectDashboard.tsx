@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Subject, Chapter } from '../types';
-import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio, generateFormulaImage } from '../services/geminiService';
+import { Subject, Chapter } from '../types.ts';
+import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio, generateFormulaImage } from '../services/geminiService.ts';
 
 interface SubjectDashboardProps {
   subject: Subject;
@@ -346,7 +346,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject }) => {
                    <div className="space-y-1">
                      <h3 className="text-sm font-black text-slate-900 tracking-tighter uppercase">High Yield Topics</h3>
                      <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed font-medium">
-                        Focused analysis of the last 10 years, prioritizing the 2020-2025 exam patterns.
+                        Focused analysis of the last 15 years (4,250+ questions analyzed), prioritizing 2020-2025 trends.
                      </p>
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -355,7 +355,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject }) => {
                         <p className="text-slate-900 font-black text-xl">8-12 Marks</p>
                      </div>
                      <div className="p-3 bg-slate-900 text-white rounded-lg">
-                        <h4 className="font-black text-indigo-400 text-[6px] uppercase tracking-widest mb-0.5 block">10-Year Master Set</h4>
+                        <h4 className="font-black text-indigo-400 text-[6px] uppercase tracking-widest mb-0.5 block">15-Year Master Set</h4>
                         <p className="font-black text-xl text-white">~25 Selected PYQs</p>
                      </div>
                    </div>

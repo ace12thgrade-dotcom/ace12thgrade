@@ -7,6 +7,14 @@
     <title>Ace12 - Premium CBSE Class 12 Study Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+      // Shim to prevent "process is not defined" error in production
+      window.process = {
+        env: {
+          API_KEY: "" // Will be injected by the environment
+        }
+      };
+    </script>
     <style>
         :root {
             --bg-pattern: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
@@ -70,5 +78,6 @@
 </head>
 <body>
     <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
