@@ -61,7 +61,7 @@ const App: React.FC = () => {
       <ChatInterface />
 
       {/* Tailwind Utility for dynamic colors used in Sidebar and Dashboard */}
-      <div className="hidden bg-blue-50 bg-red-50 bg-purple-50 bg-green-50 bg-indigo-50 bg-orange-50 text-blue-700 text-red-700 text-purple-700 text-green-700 text-indigo-700 text-orange-700 border-blue-100 border-red-100 border-purple-100 border-green-100 border-indigo-100 border-orange-100 bg-blue-100 bg-red-100 bg-purple-100 bg-green-100 bg-indigo-100 bg-orange-100"></div>
+      <div className="hidden bg-blue-50 bg-red-50 bg-purple-50 bg-green-50 bg-indigo-50 bg-orange-50 bg-pink-50 text-blue-700 text-red-700 text-purple-700 text-green-700 text-indigo-700 text-orange-700 text-pink-700 border-blue-100 border-red-100 border-purple-100 border-green-100 border-indigo-100 border-orange-100 border-pink-100 bg-blue-100 bg-red-100 bg-purple-100 bg-green-100 bg-indigo-100 bg-orange-100 bg-pink-100 text-blue-600 text-red-600 text-purple-600 text-green-600 text-indigo-600 text-orange-600 text-pink-600 bg-blue-600 bg-red-600 bg-purple-600 bg-green-600 bg-indigo-600 bg-orange-600 bg-pink-600 border-blue-500 border-red-500 border-purple-500 border-green-500 border-indigo-500 border-orange-500 border-pink-500 shadow-blue-200/50 shadow-red-200/50 shadow-purple-200/50 shadow-green-200/50 shadow-indigo-200/50 shadow-orange-200/50 shadow-pink-200/50"></div>
     </div>
   );
 };

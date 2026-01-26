@@ -118,22 +118,28 @@ export const generateFormulaImage = async (formulaText: string) => {
 
 export const generatePremiumPYQs = async (subject: string, chapter: string) => {
   const ai = getAI();
-  const prompt = `Act as an Exam Expert analyzing 4,250 past questions from the last 15 years.
+  const prompt = `Act as an Exam Strategy Expert analyzing Class 12 CBSE questions from the last 10 years.
   Subject: ${subject}
   Chapter: ${chapter}
   
-  TASK: List the "Top 40 Premium Questions" that are most likely to appear in 2026.
+  TASK: Generate a highly curated list of "Most Important PYQs".
+  
+  PRIORITY LOGIC:
+  1. HIGHEST PRIORITY: Questions from 2020 to 2025 (Latest 5 years).
+  2. SECONDARY PRIORITY: Repeated patterns from 2015 to 2019.
+  
+  STRICT RULES:
+  - Only include questions that have a high probability of appearing in 2026.
+  - "Jitna zaroorat hai utna hi" - Don't give 40-50 questions. Give roughly 20-25 "Master" questions.
+  - Include the Year next to each question (e.g., [CBSE 2023]).
+  - Provide a point-wise, easy-to-learn Solution for each.
+  - NO SPECIAL SYMBOLS ($) or LaTeX.
   
   STRUCTURE:
-  - 1 Mark Questions (1-10)
-  - 2 Marks Questions (11-20)
-  - 3 Marks Questions (21-30)
-  - 5 Marks Questions (31-40)
-  
-  RULES:
-  1. Write the Question followed by a SIMPLE Solution.
-  2. NO SPECIAL SYMBOLS ($).
-  3. Make the answers easy to understand.`;
+  - Section A: Very Short (1 Mark) - Top 5
+  - Section B: Short Answer (2/3 Marks) - Top 10
+  - Section C: Long Answer (5 Marks) - Top 5
+  - Section D: Case Based/Value Based - Top 2-3`;
 
   try {
     const response = await ai.models.generateContent({
@@ -142,7 +148,7 @@ export const generatePremiumPYQs = async (subject: string, chapter: string) => {
     });
     return response.text;
   } catch (error) {
-    return "Failed to load premium questions. Retrying...";
+    return "Failed to load premium questions. Please try again.";
   }
 };
 

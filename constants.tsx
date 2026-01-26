@@ -100,6 +100,33 @@ export const SUBJECTS: Subject[] = [
     ]
   },
   {
+    id: 'english',
+    name: 'English',
+    icon: '📖',
+    color: 'pink',
+    chapters: [
+      { id: 'ef1', title: 'Flamingo: The Last Lesson', description: 'Prose - Alphonse Daudet. Impact of war on language and education.', notes: '', importantQuestions: [] },
+      { id: 'ef2', title: 'Flamingo: Lost Spring', description: 'Prose - Anees Jung. Stories of stolen childhood and poverty.', notes: '', importantQuestions: [] },
+      { id: 'ef3', title: 'Flamingo: Deep Water', description: 'Prose - William Douglas. Overcoming fear through determination.', notes: '', importantQuestions: [] },
+      { id: 'ef4', title: 'Flamingo: The Rattrap', description: 'Prose - Selma Lagerlöf. Essential goodness in human beings.', notes: '', importantQuestions: [] },
+      { id: 'ef5', title: 'Flamingo: Indigo', description: 'Prose - Louis Fischer. Gandhi\'s fight for Champaran sharecroppers.', notes: '', importantQuestions: [] },
+      { id: 'ef6', title: 'Flamingo: Poets and Pancakes', description: 'Prose - Asokamitran. Life at Gemini Studios.', notes: '', importantQuestions: [] },
+      { id: 'ef7', title: 'Flamingo: The Interview', description: 'Prose - Christopher Silvester. Perspectives on the interview process.', notes: '', importantQuestions: [] },
+      { id: 'ef8', title: 'Flamingo: Going Places', description: 'Prose - A. R. Barton. Adolescent dreaming and hero worship.', notes: '', importantQuestions: [] },
+      { id: 'efp1', title: 'Poem: My Mother at Sixty-six', description: 'Poetry - Kamala Das. Complexity of human relationships.', notes: '', importantQuestions: [] },
+      { id: 'efp2', title: 'Poem: Keeping Quiet', description: 'Poetry - Pablo Neruda. Silent introspection and peace.', notes: '', importantQuestions: [] },
+      { id: 'efp3', title: 'Poem: A Thing of Beauty', description: 'Poetry - John Keats. Eternal joy found in nature.', notes: '', importantQuestions: [] },
+      { id: 'efp4', title: 'Poem: A Roadside Stand', description: 'Poetry - Robert Frost. Economic divide and rural life.', notes: '', importantQuestions: [] },
+      { id: 'efp5', title: 'Poem: Aunt Jennifer\'s Tigers', description: 'Poetry - Adrienne Rich. Constraints of married life.', notes: '', importantQuestions: [] },
+      { id: 'ev1', title: 'Vistas: The Third Level', description: 'Supplementary - Jack Finney. Escapism and modern anxieties.', notes: '', importantQuestions: [] },
+      { id: 'ev2', title: 'Vistas: The Tiger King', description: 'Supplementary - Kalki. Satire on political arrogance.', notes: '', importantQuestions: [] },
+      { id: 'ev3', title: 'Vistas: Journey to the end of the Earth', description: 'Supplementary - Tishani Doshi. Antarctica and climate change.', notes: '', importantQuestions: [] },
+      { id: 'ev4', title: 'Vistas: The Enemy', description: 'Supplementary - Pearl S. Buck. Humanism vs patriotism during war.', notes: '', importantQuestions: [] },
+      { id: 'ev5', title: 'Vistas: On the Face of It', description: 'Supplementary - Susan Hill. Loneliness and disability.', notes: '', importantQuestions: [] },
+      { id: 'ev6', title: 'Vistas: Memories of Childhood', description: 'Supplementary - Zitkala-Sa & Bama. Social discrimination.', notes: '', importantQuestions: [] }
+    ]
+  },
+  {
     id: 'physed',
     name: 'Physical Education',
     icon: '⚽',

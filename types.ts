@@ -1,5 +1,5 @@
 
-export type SubjectId = 'physics' | 'maths' | 'chemistry' | 'biology' | 'cs' | 'physed';
+export type SubjectId = 'physics' | 'maths' | 'chemistry' | 'biology' | 'cs' | 'physed' | 'english';
 
 export interface Chapter {
   id: string;
