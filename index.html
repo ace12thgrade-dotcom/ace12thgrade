@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Ace12 - Premium CBSE Class 12 Study Hub</title>
+    <title>Ace12 - Dark Aesthetic CBSE Study Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -14,29 +14,27 @@
     </script>
     <style>
         :root {
-            --primary: #6366f1;
-            --bg-base: #fdfdfe;
+            --primary: #818cf8;
+            --bg-base: #020617;
         }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-base);
-            color: #1e293b;
+            color: #e2e8f0;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
         }
         
-        /* Animated Mesh Gradient Background */
         .mesh-bg {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: -1;
-            background-color: #fdfdfe;
+            background-color: #020617;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, rgba(236, 72, 153, 0.03) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.05) 0, transparent 50%);
-            filter: blur(100px);
-            opacity: 0.8;
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.1) 0, transparent 50%), 
+                radial-gradient(at 50% 100%, rgba(59, 130, 246, 0.15) 0, transparent 50%);
+            filter: blur(80px);
         }
 
         h1, h2, h3, .font-heading {
@@ -45,28 +43,28 @@
         }
 
         .glass {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         .premium-card {
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
             transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
 
         .premium-card:hover {
             transform: translateY(-8px) scale(1.01);
-            box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.1);
-            background: white;
-            border-color: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+            background: rgba(30, 41, 59, 0.6);
+            border-color: rgba(129, 140, 248, 0.3);
         }
 
         @keyframes float {
