@@ -33,85 +33,124 @@ async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: 
   return buffer;
 }
 
-const VisualSolution: React.FC<{ question: string, subject: string }> = ({ question, subject }) => {
+const VisualSolution: React.FC<{ description: string, subject: string, autoLoad?: boolean }> = ({ description, subject, autoLoad = false }) => {
   const [img, setImg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadVisual = async () => {
     setLoading(true);
     try {
-      const data = await generateVisualSolution(question, subject);
+      const data = await generateVisualSolution(description, subject);
       if (data) setImg(data);
     } catch (e) {}
     setLoading(false);
   };
 
+  useEffect(() => {
+    if (autoLoad) loadVisual();
+  }, [autoLoad]);
+
   return (
-    <div className="mt-6">
+    <div className="my-6">
       {!img && !loading && (
         <button 
           onClick={loadVisual}
-          className="text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-full hover:bg-indigo-600 hover:text-white transition-all active:scale-95"
+          className="flex items-center gap-3 px-6 py-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl hover:bg-indigo-500/10 transition-all text-[10px] font-bold uppercase tracking-widest text-indigo-400"
         >
-          🖼️ Generate Visual AI Solution
+          🖼️ Show Visual: {description}
         </button>
       )}
       {loading && (
-        <div className="flex items-center gap-3 text-indigo-400 animate-pulse">
-           <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-           <span className="text-[10px] font-black uppercase tracking-widest">AI is drawing diagram...</span>
+        <div className="flex items-center gap-3 py-4 text-indigo-400/50">
+           <div className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+           <span className="text-[10px] font-bold uppercase tracking-widest">Generating Diagram...</span>
         </div>
       )}
       {img && (
-        <div className="bg-white rounded-[2rem] p-4 shadow-2xl overflow-hidden mt-4 animate-in zoom-in-95 duration-500">
-           <img src={`data:image/png;base64,${img}`} className="w-full h-auto object-contain rounded-xl" alt="AI Generated Diagram" />
-           <p className="text-[9px] text-slate-400 text-center mt-3 font-bold uppercase tracking-[0.2em]">AI Visual Solution for Board Prep</p>
+        <div className="bg-white rounded-2xl p-2 shadow-xl overflow-hidden mt-4 border border-slate-200">
+           <img src={`data:image/png;base64,${img}`} className="w-full h-auto max-h-[500px] object-contain rounded-xl" alt="Concept Diagram" />
+           <p className="text-[9px] text-slate-400 text-center mt-2 font-bold uppercase tracking-widest">Concept Visualization</p>
         </div>
       )}
     </div>
   );
 };
 
-const AestheticNotebook: React.FC<{ content: string; color: string; subject: string; isPyq?: boolean }> = ({ content, color, subject, isPyq }) => {
+const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: boolean }> = ({ content, subject, isPyq }) => {
   const lines = content.split('\n');
+  const sections: { title: string; lines: string[] }[] = [];
+  let currentSection: { title: string; lines: string[] } | null = null;
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (trimmed.startsWith('TOPIC:') || trimmed.startsWith('QUESTION:') || (trimmed.startsWith('#') && !trimmed.startsWith('##'))) {
+      if (currentSection) sections.push(currentSection);
+      currentSection = { title: trimmed.replace(/TOPIC:|QUESTION:|#/g, '').trim(), lines: [] };
+    } else if (currentSection) {
+      currentSection.lines.push(line);
+    } else {
+      currentSection = { title: "Overview", lines: [line] };
+    }
+  });
+  if (currentSection) sections.push(currentSection);
+
   return (
-    <div className="space-y-6 md:space-y-10 max-w-4xl mx-auto pb-16 px-4">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} className="h-4"></div>;
-        
-        if (trimmed.startsWith('QUESTION:') || trimmed.startsWith('TOPIC:')) {
-          const text = trimmed.replace('QUESTION:', '').replace('TOPIC:', '').trim();
-          return (
-            <div key={idx} className="pt-10 first:pt-0">
-              <div className="flex items-start gap-4 mb-3">
-                <div className={`w-2 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.6)] shrink-0`}></div>
-                <h3 className="text-lg md:text-2xl font-black text-white tracking-tight leading-tight uppercase">{text}</h3>
-              </div>
-              {isPyq && <VisualSolution question={text} subject={subject} />}
-            </div>
-          );
-        }
-
-        if (trimmed.startsWith('YEAR:')) {
-          return <span key={idx} className="inline-block px-4 py-1.5 bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] font-black rounded-full tracking-[0.2em]">{trimmed}</span>;
-        }
-        
-        if (trimmed.startsWith('SOLUTION:') || trimmed.startsWith('DEFINITION:')) {
-           return (
-             <div key={idx} className="bg-slate-900/80 border border-white/5 p-8 rounded-[2.5rem] shadow-2xl">
-                <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-4 block">Board Expected Solution</span>
-                <p className="text-slate-300 text-sm md:text-[16px] font-bold leading-relaxed whitespace-pre-line">{trimmed.replace('SOLUTION:', '').replace('DEFINITION:', '').trim()}</p>
-             </div>
-           );
-        }
-
-        return (
-          <div key={idx} className="flex gap-4 items-start pl-6 border-l-2 border-white/5">
-            <p className="text-slate-400 text-[13px] md:text-[16px] font-semibold leading-relaxed tracking-tight">{trimmed}</p>
+    <div className="space-y-8 max-w-4xl mx-auto pb-32">
+      {sections.map((section, idx) => (
+        <div key={idx} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="flex items-center gap-3 mb-3 ml-2">
+            <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+            <h3 className="text-base lg:text-lg font-bold text-white uppercase tracking-tight">{section.title}</h3>
           </div>
-        );
-      })}
+
+          <div className="glass rounded-[1.5rem] lg:rounded-[2rem] p-6 lg:p-10 border border-white/5 shadow-lg">
+            <div className="space-y-5">
+              {section.lines.map((line, lIdx) => {
+                const trimmed = line.trim();
+                
+                if (trimmed.includes('[DIAGRAM:')) {
+                  const match = trimmed.match(/\[DIAGRAM:\s*(.*?)\]/);
+                  if (match && match[1]) return <VisualSolution key={lIdx} description={match[1]} subject={subject} autoLoad={isPyq} />;
+                }
+
+                if (trimmed.startsWith('YEAR:') || trimmed.startsWith('INSIGHT:')) {
+                  const label = trimmed.split(':')[0];
+                  const body = trimmed.split(':').slice(1).join(':').trim();
+                  return (
+                    <div key={lIdx} className="flex flex-wrap items-center gap-2">
+                      <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded ${label === 'YEAR' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                        {label}
+                      </span>
+                      <p className="text-slate-400 text-xs font-medium">{body}</p>
+                    </div>
+                  );
+                }
+
+                if (trimmed.startsWith('SOLUTION:') || trimmed.startsWith('DEFINITION:') || trimmed.startsWith('FORMULA:')) {
+                  const label = trimmed.split(':')[0];
+                  const body = trimmed.split(':').slice(1).join(':').trim();
+                  return (
+                    <div key={lIdx} className="bg-indigo-500/[0.03] p-5 rounded-xl border border-white/5 mt-2">
+                      <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-2 block">{label}</span>
+                      <p className="text-slate-200 text-sm lg:text-base font-medium leading-relaxed whitespace-pre-line">
+                        {body}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <p key={lIdx} className="text-slate-400 text-sm lg:text-base font-normal leading-relaxed pl-1">
+                    {trimmed.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="text-indigo-300 font-bold">{part}</strong> : part)}
+                  </p>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -197,76 +236,73 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
   );
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 md:px-10 lg:px-20 py-10">
+    <div className="flex-1 px-4 lg:px-20 py-6 lg:py-10">
       {!selectedChapter ? (
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <header className="mb-16">
-            <div className="flex items-center gap-10">
-              <div className={`w-24 h-24 rounded-[2.5rem] bg-gradient-to-tr from-slate-800 to-indigo-600 text-white flex items-center justify-center text-5xl shadow-[0_20px_60px_-15px_rgba(99,102,241,0.3)] float`}>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <header className="mb-10 lg:mb-16 text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row items-center gap-8">
+              <div className="w-20 h-20 lg:w-28 lg:h-28 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-4xl lg:text-5xl shadow-2xl">
                 {subject.icon}
               </div>
               <div>
-                <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none mb-4">{subject.name}</h1>
-                <div className="flex items-center gap-4">
-                   <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                   <p className="text-slate-500 font-black uppercase text-[10px] tracking-[0.5em]">Board 2026 Prediction Active</p>
-                </div>
+                <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tighter mb-2">{subject.name}</h1>
+                <p className="text-slate-500 text-sm lg:text-base font-bold">4250+ PYQ Analysis | Board 2026 Prediction Hub</p>
               </div>
             </div>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 pb-20">
             {filteredChapters.map((chapter) => (
               <div 
                 key={chapter.id} 
                 onClick={() => { setSelectedChapter(chapter); setViewMode('summary'); }} 
-                className="premium-card p-12 rounded-[3.5rem] cursor-pointer group hover:scale-[1.05] active:scale-[0.98]"
+                className="premium-card p-8 rounded-3xl cursor-pointer group hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
               >
-                <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-3xl mb-10 group-hover:bg-indigo-600/20 transition-all">📑</div>
-                <h3 className="font-black text-2xl text-white mb-4 tracking-tight leading-tight line-clamp-2">{chapter.title}</h3>
-                <p className="text-slate-500 text-[13px] font-bold leading-relaxed line-clamp-2 mb-10">{chapter.description}</p>
-                <div className="flex items-center justify-between pt-8 border-t border-white/5">
-                   <span className={`text-[11px] font-black uppercase tracking-[0.3em] text-indigo-400`}>Module {chapter.id.slice(-1)}</span>
-                   <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all transform group-hover:translate-x-2`}>→</div>
+                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-xl mb-6 group-hover:bg-indigo-600/20 transition-all">📑</div>
+                <h3 className="font-bold text-lg lg:text-xl text-white mb-3 tracking-tight">{chapter.title}</h3>
+                <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6 line-clamp-2">{chapter.description}</p>
+                <div className="flex items-center justify-between pt-5 border-t border-white/5">
+                   <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400">Chapter {chapter.id.replace(/\D/g, '')}</span>
+                   <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-indigo-600 transition-all">→</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-700">
+        <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-500">
           <button 
             onClick={() => { setSelectedChapter(null); stopAudio(); }} 
-            className="mb-10 flex items-center gap-3 text-slate-500 font-black text-[10px] tracking-[0.5em] bg-white/5 hover:bg-white/10 px-8 py-4 rounded-full border border-white/5 shadow-2xl transition-all active:scale-95"
+            className="mb-8 flex items-center gap-2 text-slate-500 font-bold text-[10px] tracking-widest bg-white/5 hover:bg-white/10 px-6 py-3 rounded-full border border-white/5 active:scale-95 transition-all"
           >
-            ← BACK TO CHAPTERS
+            ← BACK
           </button>
           
-          <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[4rem] border border-white/5 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.6)] overflow-hidden">
-            <div className={`p-16 md:p-24 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white relative`}>
-              <div className="absolute top-0 right-0 w-full h-full bg-indigo-500/5 rounded-full blur-[150px]"></div>
+          <div className="bg-slate-950/60 backdrop-blur-3xl rounded-[2rem] lg:rounded-[3rem] border border-white/5 shadow-2xl overflow-hidden">
+            <div className="p-10 lg:p-16 bg-gradient-to-br from-indigo-950/20 to-slate-950 text-white relative">
+              <div className="absolute top-0 right-0 w-full h-full bg-indigo-500/5 rounded-full blur-[100px]"></div>
               <div className="relative z-10">
-                <span className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.6em] mb-8 block">Board Strategy Module</span>
-                <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight max-w-4xl">{selectedChapter.title}</h2>
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-4 block">Chapter Archive</span>
+                <h2 className="text-2xl lg:text-4xl font-black tracking-tight leading-tight max-w-3xl">{selectedChapter.title}</h2>
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row border-b border-white/5 px-10 bg-slate-950/50 items-center justify-between gap-6 py-4 relative z-30">
-              <div className="flex gap-4">
+            <div className="flex flex-col lg:flex-row border-b border-white/5 px-6 lg:px-10 bg-slate-950/30 items-center justify-between gap-4 py-0 relative z-30">
+              <div className="flex gap-4 lg:gap-6 overflow-x-auto no-scrollbar w-full lg:w-auto">
                 {[
-                  { id: 'summary', label: 'ANALYTICS', icon: '💎' },
+                  { id: 'summary', label: 'STRATEGY', icon: '💎' },
                   { id: 'notes', label: 'NOTES', icon: '📝' },
-                  { id: 'pyqs', label: 'HOT PYQs', icon: '🔥' }
+                  { id: 'pyqs', label: 'BOARD MIQs', icon: '🔥' }
                 ].map((tab) => (
                   <button 
                     key={tab.id} 
                     disabled={loading}
                     onClick={() => setViewMode(tab.id as any)} 
-                    className={`px-10 py-6 text-[11px] font-black tracking-[0.2em] transition-all border-b-4 flex items-center gap-4 rounded-t-3xl disabled:opacity-50 ${
-                      viewMode === tab.id ? `border-indigo-500 text-white bg-white/5` : 'border-transparent text-slate-500 hover:text-slate-300'
+                    className={`px-3 lg:px-4 py-6 text-[10px] lg:text-[11px] font-bold tracking-widest transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
+                      viewMode === tab.id ? `border-indigo-500 text-white` : 'border-transparent text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    <span className="text-2xl">{tab.icon}</span>{tab.label}
+                    <span className="text-lg">{tab.icon}</span>{tab.label}
                   </button>
                 ))}
               </div>
@@ -275,64 +311,55 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                 <button 
                   onClick={handleListen} 
                   disabled={isAudioLoading} 
-                  className={`px-10 py-5 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl active:scale-95 ${
-                    isPlaying ? 'bg-red-600 shadow-red-500/20' : 'bg-indigo-600 shadow-indigo-500/20'
+                  className={`w-full lg:w-auto mb-4 lg:mb-0 px-6 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
+                    isPlaying ? 'bg-red-600' : 'bg-indigo-600'
                   } text-white disabled:opacity-50`}
                 >
-                  {isAudioLoading ? 'GENERATE...' : isPlaying ? 'STOP PLAYER' : '🔊 HINGLISH EXPLANATION'}
+                  {isAudioLoading ? '...' : isPlaying ? '⏹ STOP' : '🔊 LISTEN'}
                 </button>
               )}
             </div>
 
-            <div className="p-12 md:p-20 min-h-[600px] relative">
+            <div className="p-6 lg:p-14 min-h-[400px]">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-32 gap-10">
-                  <div className={`w-16 h-16 border-4 border-white/5 border-t-indigo-500 rounded-full animate-spin shadow-[0_0_20px_rgba(99,102,241,0.3)]`}></div>
-                  <div className="text-center">
-                    <p className="text-white font-black text-sm uppercase tracking-[0.5em] mb-4 animate-pulse">Analyzing 4,250+ Papers</p>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Extracting repeat patterns for 2026...</p>
-                  </div>
+                <div className="flex flex-col items-center justify-center py-24 gap-6">
+                  <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Scanning Board Papers...</p>
                 </div>
               ) : error ? (
-                <div className="text-center py-20 bg-red-500/5 rounded-3xl border border-red-500/20">
-                  <p className="text-red-400 font-bold mb-4">{error}</p>
-                  <button onClick={() => setViewMode(viewMode)} className="px-8 py-3 bg-red-600 text-white rounded-full font-black text-[10px] tracking-widest uppercase">Retry</button>
+                <div className="text-center py-20">
+                  <p className="text-red-400 text-sm font-bold mb-4">Error loading content.</p>
+                  <button onClick={() => setViewMode(viewMode)} className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold text-[9px] uppercase tracking-widest">Retry</button>
                 </div>
               ) : viewMode === 'summary' ? (
-                <div className="space-y-20">
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                     <div className="p-14 bg-slate-900/60 border border-white/5 rounded-[4rem] text-white shadow-3xl relative group overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[60px] group-hover:scale-150 transition-transform duration-1000"></div>
-                        <span className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] block mb-8">MIQ Score</span>
-                        <p className="text-6xl font-black tracking-tighter mb-4">92%</p>
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">High Probability Chapter</p>
-                     </div>
-                     <div className="p-14 bg-slate-900/60 border border-white/5 rounded-[4rem] text-white shadow-3xl">
-                        <span className="text-[10px] font-black uppercase text-green-400 tracking-[0.4em] block mb-8">Repeat Frequency</span>
-                        <p className="text-6xl font-black tracking-tighter mb-4 text-white">Tier 1</p>
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Hot Topic for 2026</p>
-                     </div>
-                     <div className="p-14 bg-slate-900/60 border border-white/5 rounded-[4rem] text-white shadow-3xl">
-                        <span className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] block mb-8">Paper Count</span>
-                        <p className="text-6xl font-black tracking-tighter mb-4 text-white">4.2k</p>
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Historical Data Scanned</p>
-                     </div>
+                <div className="space-y-10 animate-in fade-in duration-500">
+                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                     {[
+                       { label: 'Exam Importance', value: 'High', color: 'indigo' },
+                       { label: 'Repeat Rate', value: '92%', color: 'emerald' },
+                       { label: 'Study Priority', value: 'Level 1', color: 'purple' }
+                     ].map((stat, i) => (
+                       <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-2xl relative overflow-hidden">
+                          <span className="text-[9px] font-bold uppercase text-slate-500 tracking-widest block mb-4">{stat.label}</span>
+                          <p className="text-3xl font-black text-white">{stat.value}</p>
+                       </div>
+                     ))}
                    </div>
-                   <div className="p-16 bg-indigo-600/10 border border-indigo-500/20 rounded-[4rem] relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
-                      <h3 className="text-3xl font-black text-white tracking-tighter uppercase mb-6">Expert Analysis for {selectedChapter.title}</h3>
-                      <p className="text-slate-400 font-semibold leading-relaxed max-w-4xl text-lg">Focus heavily on the <span className="text-indigo-400">Repeated 5-Mark Questions</span> from 2018, 2020, and 2023. This chapter traditionally forms the backbone of Section C. Use our "Hot PYQs" tab to see the exact wording used by CBSE board setters.</p>
+                   <div className="p-8 lg:p-12 bg-indigo-600/5 border border-indigo-500/10 rounded-[2rem]">
+                      <h3 className="text-lg lg:text-xl font-bold text-white uppercase mb-4 tracking-tight">2026 Prep Strategy</h3>
+                      <p className="text-slate-400 font-medium leading-relaxed text-sm lg:text-lg">
+                        Our analysis shows this chapter is a goldmine for <span className="text-indigo-400">3-Mark and 5-Mark questions</span>. 
+                        Don't waste time on small details; master the definitions and the MIQs provided. 
+                        Board examiners repeat these specific patterns 8 out of 10 times.
+                      </p>
                    </div>
                 </div>
               ) : content ? (
-                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <AestheticNotebook 
-                    content={content} 
-                    color={subject.color} 
-                    subject={subject.name} 
-                    isPyq={viewMode === 'pyqs'} 
-                  />
-                </div>
+                <AestheticNotebook 
+                  content={content} 
+                  subject={subject.name} 
+                  isPyq={viewMode === 'pyqs'} 
+                />
               ) : null}
             </div>
           </div>
