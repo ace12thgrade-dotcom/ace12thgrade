@@ -20,7 +20,8 @@ export const SUBJECTS: Subject[] = [
       { id: 'p10', title: 'Dual Nature of Matter', description: 'Photoelectric effect and De-Broglie waves.', notes: '', importantQuestions: [] },
       { id: 'p11', title: 'Atoms', description: 'Bohr model and spectra.', notes: '', importantQuestions: [] },
       { id: 'p12', title: 'Nuclei', description: 'Radioactivity, Fission, Fusion.', notes: '', importantQuestions: [] },
-      { id: 'p13', title: 'Semiconductors', description: 'P-N junction, Diodes, Logic Gates.', notes: '', importantQuestions: [] }
+      { id: 'p13', title: 'Semiconductors', description: 'P-N junction, Diodes, Logic Gates.', notes: '', importantQuestions: [] },
+      { id: 'p_rev', title: 'FULL SUBJECT REVISION', description: 'Master Formulas, Laws, and High-Yield Revision Points for 2026 Boards.', notes: '', importantQuestions: [] }
     ]
   },
   {
@@ -41,7 +42,8 @@ export const SUBJECTS: Subject[] = [
       { id: 'm10', title: 'Vector Algebra', description: 'Dot and Cross products.', notes: '', importantQuestions: [] },
       { id: 'm11', title: '3D Geometry', description: 'Lines and Planes in space.', notes: '', importantQuestions: [] },
       { id: 'm12', title: 'Linear Programming', description: 'Optimization under constraints.', notes: '', importantQuestions: [] },
-      { id: 'm13', title: 'Probability', description: 'Bayes theorem, Distributions.', notes: '', importantQuestions: [] }
+      { id: 'm13', title: 'Probability', description: 'Bayes theorem, Distributions.', notes: '', importantQuestions: [] },
+      { id: 'm_rev', title: 'FULL SUBJECT REVISION', description: 'Formula Book, Shortcuts, and Important Theorem List for 2026 Boards.', notes: '', importantQuestions: [] }
     ]
   },
   {
@@ -59,7 +61,8 @@ export const SUBJECTS: Subject[] = [
       { id: 'c7', title: 'Alcohols, Phenols, Ethers', description: 'Syntheses and reactions.', notes: '', importantQuestions: [] },
       { id: 'c8', title: 'Aldehydes, Ketones, Acids', description: 'Nucleophilic addition.', notes: '', importantQuestions: [] },
       { id: 'c9', title: 'Amines', description: 'Basic strength and Diazonium salts.', notes: '', importantQuestions: [] },
-      { id: 'c10', title: 'Biomolecules', description: 'Carbohydrates, Proteins, DNA.', notes: '', importantQuestions: [] }
+      { id: 'c10', title: 'Biomolecules', description: 'Carbohydrates, Proteins, DNA.', notes: '', importantQuestions: [] },
+      { id: 'c_rev', title: 'FULL SUBJECT REVISION', description: 'All Name Reactions, Mechanisms, and Formula Sheet for 2026 Boards.', notes: '', importantQuestions: [] }
     ]
   },
   {
@@ -80,7 +83,8 @@ export const SUBJECTS: Subject[] = [
       { id: 'b10', title: 'Biotechnology: Applications', description: 'Medicine, Agriculture.', notes: '', importantQuestions: [] },
       { id: 'b11', title: 'Organisms & Populations', description: 'Interactions and adaptations.', notes: '', importantQuestions: [] },
       { id: 'b12', title: 'Ecosystem', description: 'Energy flow, cycles.', notes: '', importantQuestions: [] },
-      { id: 'b13', title: 'Biodiversity & Conservation', description: 'Threats and strategies.', notes: '', importantQuestions: [] }
+      { id: 'b13', title: 'Biodiversity & Conservation', description: 'Threats and strategies.', notes: '', importantQuestions: [] },
+      { id: 'b_rev', title: 'FULL SUBJECT REVISION', description: 'Important Diagrams List, Differences, and Glossary for 2026 Boards.', notes: '', importantQuestions: [] }
     ]
   },
   {
@@ -96,7 +100,8 @@ export const SUBJECTS: Subject[] = [
       { id: 'cs5', title: 'Computer Networks', description: 'Topology, protocols, internet.', notes: '', importantQuestions: [] },
       { id: 'cs6', title: 'Database Concepts', description: 'Relational model, keys.', notes: '', importantQuestions: [] },
       { id: 'cs7', title: 'Structured Query Language', description: 'DDL, DML commands.', notes: '', importantQuestions: [] },
-      { id: 'cs8', title: 'Python-SQL Interface', description: 'Connecting Python to MySQL.', notes: '', importantQuestions: [] }
+      { id: 'cs8', title: 'Python-SQL Interface', description: 'Connecting Python to MySQL.', notes: '', importantQuestions: [] },
+      { id: 'cs_rev', title: 'FULL SUBJECT REVISION', description: 'Python Code Snippets, SQL Query List, and Network Topology Revision.', notes: '', importantQuestions: [] }
     ]
   },
   {
@@ -105,25 +110,26 @@ export const SUBJECTS: Subject[] = [
     icon: '📖',
     color: 'pink',
     chapters: [
-      { id: 'ef1', title: 'Flamingo: The Last Lesson', description: 'Prose - Alphonse Daudet. Impact of war on language and education.', notes: '', importantQuestions: [] },
-      { id: 'ef2', title: 'Flamingo: Lost Spring', description: 'Prose - Anees Jung. Stories of stolen childhood and poverty.', notes: '', importantQuestions: [] },
-      { id: 'ef3', title: 'Flamingo: Deep Water', description: 'Prose - William Douglas. Overcoming fear through determination.', notes: '', importantQuestions: [] },
-      { id: 'ef4', title: 'Flamingo: The Rattrap', description: 'Prose - Selma Lagerlöf. Essential goodness in human beings.', notes: '', importantQuestions: [] },
-      { id: 'ef5', title: 'Flamingo: Indigo', description: 'Prose - Louis Fischer. Gandhi\'s fight for Champaran sharecroppers.', notes: '', importantQuestions: [] },
-      { id: 'ef6', title: 'Flamingo: Poets and Pancakes', description: 'Prose - Asokamitran. Life at Gemini Studios.', notes: '', importantQuestions: [] },
-      { id: 'ef7', title: 'Flamingo: The Interview', description: 'Prose - Christopher Silvester. Perspectives on the interview process.', notes: '', importantQuestions: [] },
-      { id: 'ef8', title: 'Flamingo: Going Places', description: 'Prose - A. R. Barton. Adolescent dreaming and hero worship.', notes: '', importantQuestions: [] },
-      { id: 'efp1', title: 'Poem: My Mother at Sixty-six', description: 'Poetry - Kamala Das. Complexity of human relationships.', notes: '', importantQuestions: [] },
-      { id: 'efp2', title: 'Poem: Keeping Quiet', description: 'Poetry - Pablo Neruda. Silent introspection and peace.', notes: '', importantQuestions: [] },
-      { id: 'efp3', title: 'Poem: A Thing of Beauty', description: 'Poetry - John Keats. Eternal joy found in nature.', notes: '', importantQuestions: [] },
-      { id: 'efp4', title: 'Poem: A Roadside Stand', description: 'Poetry - Robert Frost. Economic divide and rural life.', notes: '', importantQuestions: [] },
-      { id: 'efp5', title: 'Poem: Aunt Jennifer\'s Tigers', description: 'Poetry - Adrienne Rich. Constraints of married life.', notes: '', importantQuestions: [] },
-      { id: 'ev1', title: 'Vistas: The Third Level', description: 'Supplementary - Jack Finney. Escapism and modern anxieties.', notes: '', importantQuestions: [] },
-      { id: 'ev2', title: 'Vistas: The Tiger King', description: 'Supplementary - Kalki. Satire on political arrogance.', notes: '', importantQuestions: [] },
-      { id: 'ev3', title: 'Vistas: Journey to the end of the Earth', description: 'Supplementary - Tishani Doshi. Antarctica and climate change.', notes: '', importantQuestions: [] },
-      { id: 'ev4', title: 'Vistas: The Enemy', description: 'Supplementary - Pearl S. Buck. Humanism vs patriotism during war.', notes: '', importantQuestions: [] },
-      { id: 'ev5', title: 'Vistas: On the Face of It', description: 'Supplementary - Susan Hill. Loneliness and disability.', notes: '', importantQuestions: [] },
-      { id: 'ev6', title: 'Vistas: Memories of Childhood', description: 'Supplementary - Zitkala-Sa & Bama. Social discrimination.', notes: '', importantQuestions: [] }
+      { id: 'ef1', title: 'Flamingo: The Last Lesson', description: 'Prose - Alphonse Daudet.', notes: '', importantQuestions: [] },
+      { id: 'ef2', title: 'Flamingo: Lost Spring', description: 'Prose - Anees Jung.', notes: '', importantQuestions: [] },
+      { id: 'ef3', title: 'Flamingo: Deep Water', description: 'Prose - William Douglas.', notes: '', importantQuestions: [] },
+      { id: 'ef4', title: 'Flamingo: The Rattrap', description: 'Prose - Selma Lagerlöf.', notes: '', importantQuestions: [] },
+      { id: 'ef5', title: 'Flamingo: Indigo', description: 'Prose - Louis Fischer.', notes: '', importantQuestions: [] },
+      { id: 'ef6', title: 'Flamingo: Poets and Pancakes', description: 'Prose - Asokamitran.', notes: '', importantQuestions: [] },
+      { id: 'ef7', title: 'Flamingo: The Interview', description: 'Prose - Christopher Silvester.', notes: '', importantQuestions: [] },
+      { id: 'ef8', title: 'Flamingo: Going Places', description: 'Prose - A. R. Barton.', notes: '', importantQuestions: [] },
+      { id: 'efp1', title: 'Poem: My Mother at Sixty-six', description: 'Poetry - Kamala Das.', notes: '', importantQuestions: [] },
+      { id: 'efp2', title: 'Poem: Keeping Quiet', description: 'Poetry - Pablo Neruda.', notes: '', importantQuestions: [] },
+      { id: 'efp3', title: 'Poem: A Thing of Beauty', description: 'Poetry - John Keats.', notes: '', importantQuestions: [] },
+      { id: 'efp4', title: 'Poem: A Roadside Stand', description: 'Poetry - Robert Frost.', notes: '', importantQuestions: [] },
+      { id: 'efp5', title: 'Poem: Aunt Jennifer\'s Tigers', description: 'Poetry - Adrienne Rich.', notes: '', importantQuestions: [] },
+      { id: 'ev1', title: 'Vistas: The Third Level', description: 'Supplementary - Jack Finney.', notes: '', importantQuestions: [] },
+      { id: 'ev2', title: 'Vistas: The Tiger King', description: 'Supplementary - Kalki.', notes: '', importantQuestions: [] },
+      { id: 'ev3', title: 'Vistas: Journey to the end of the Earth', description: 'Supplementary - Tishani Doshi.', notes: '', importantQuestions: [] },
+      { id: 'ev4', title: 'Vistas: The Enemy', description: 'Supplementary - Pearl S. Buck.', notes: '', importantQuestions: [] },
+      { id: 'ev5', title: 'Vistas: On the Face of It', description: 'Supplementary - Susan Hill.', notes: '', importantQuestions: [] },
+      { id: 'ev6', title: 'Vistas: Memories of Childhood', description: 'Supplementary - Zitkala-Sa & Bama.', notes: '', importantQuestions: [] },
+      { id: 'e_rev', title: 'FULL SUBJECT REVISION', description: 'Chapter-wise Summaries, Poetic Devices, and Character Sketches Master List.', notes: '', importantQuestions: [] }
     ]
   },
   {
@@ -141,7 +147,8 @@ export const SUBJECTS: Subject[] = [
       { id: 'pe7', title: 'Physiology & Injuries', description: 'Impact of exercise and recovery.', notes: '', importantQuestions: [] },
       { id: 'pe8', title: 'Biomechanics & Sports', description: 'Laws of motion, Equilibrium.', notes: '', importantQuestions: [] },
       { id: 'pe9', title: 'Psychology & Sports', description: 'Personality and motivation.', notes: '', importantQuestions: [] },
-      { id: 'pe10', title: 'Training in Sports', description: 'Strength, Endurance, Speed.', notes: '', importantQuestions: [] }
+      { id: 'pe10', title: 'Training in Sports', description: 'Strength, Endurance, Speed.', notes: '', importantQuestions: [] },
+      { id: 'pe_rev', title: 'FULL SUBJECT REVISION', description: 'All Fixtures, Asanas list, and Sports Injuries Revision Chart.', notes: '', importantQuestions: [] }
     ]
   }
 ];
