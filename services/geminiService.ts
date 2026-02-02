@@ -4,24 +4,23 @@ import { GoogleGenAI, Modality } from "@google/genai";
 const getAI = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API_KEY_MISSING: Make sure you have added the API_KEY in your deployment environment variables.");
+    throw new Error("API_KEY_MISSING: Go to Netlify -> Site Settings -> Environment Variables and add 'API_KEY'.");
   }
   return new GoogleGenAI({ apiKey });
 };
 
 export const generateDetailedNotes = async (subject: string, chapter: string) => {
   const ai = getAI();
-  const prompt = `Act as a Top Board Specialist. Subject: ${subject}, Chapter: ${chapter}.
+  const prompt = `Act as a Class 12 Subject Expert. Subject: ${subject}, Chapter: ${chapter}.
   
-  TASK: Generate easy-to-read notes for Class 12.
+  TASK: Create full, comprehensive book-standard notes.
   
   STRICT RULES:
-  1. NO SPECIAL SYMBOLS: Do not use stars, emojis, or decorative symbols.
-  2. MATH ONLY: Use symbols like ±, √, ∫ only when writing actual mathematical formulas.
-  3. LIGHT BOX STRUCTURE: Use "TOPIC: [Name]" for every sub-section.
-  4. LANGUAGE: Use simple Hinglish (Mix of English and Hindi). Explain like a friend.
-  5. DIAGRAMS: Use [DIAGRAM: description] only for vital concepts.
-  6. FORMATTING: Use **bold** for key terms. No other styling.`;
+  1. NO TRUNCATION: Provide full, high-quality definitions and detailed explanations.
+  2. NO DECORATIVE SYMBOLS: No stars, diamonds, or emojis.
+  3. STRUCTURE: Use "TOPIC: [Name]" for headers.
+  4. LANGUAGE: Simple Hinglish for explanation, but Formal Academic English for core definitions.
+  5. DIAGRAM DESCRIPTION: Use "DIAGRAM_GUIDE: [Description]" to explain essential visuals in text.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -32,17 +31,25 @@ export const generateDetailedNotes = async (subject: string, chapter: string) =>
 
 export const generatePremiumPYQs = async (subject: string, chapter: string) => {
   const ai = getAI();
-  const prompt = `Act as an Examiner who has analyzed 15 years of CBSE/Board papers.
-  Subject: ${subject}, Chapter: ${chapter}.
+  const prompt = `Act as a Senior CBSE Board Examiner. Analyze 15 years of papers for Subject: ${subject}, Chapter: ${chapter}.
   
-  TASK: Provide the 5-7 most frequently asked questions.
+  TASK: Provide 5-7 "Sure-Shot" Board Questions with full Book-Standard Solutions.
   
-  STRICT RULES:
-  1. NO SPECIAL SYMBOLS: Absolutely no emojis, stars, or fancy bullets. Use plain numbers or dots if needed.
-  2. EASY SOLUTIONS: Write the answer in the simplest way possible so a student can learn it in 2 minutes.
-  3. YEAR INFO: Mention the years clearly.
-  4. STRUCTURE: Start each question block with "TOPIC: [Concept Name]".
-  5. INSIGHT: Explain why this specific question is important for Boards.`;
+  STRICT INSTRUCTIONS FOR BOARD STANDARDS:
+  1. FULL QUESTION TEXT: Write the COMPLETE question exactly as it appears in the official exam paper. DO NOT summarize. If the question has parts (a, b, c), include all of them.
+  2. BOOK-STYLE SOLUTION:
+     - Provide the solution in a "Board Answer Sheet" format.
+     - For Phys Ed: Include full calculations (Total Teams N, No. of Byes, Upper/Lower Half distribution).
+     - For Maths: Show every step (Constraints, Intersection points, Corner point table).
+     - For Science: Use 'Given', 'Formula', 'Calculation', and 'Conclusion'.
+  3. TEXT-BASED DIAGRAM GUIDE: Since we cannot show images, use "DIAGRAM_GUIDE: [Detailed Explanation]" to describe exactly how the student should draw the diagram (e.g., Fixture bracket pairings, Graph shading, or Ray paths).
+  4. NO DECORATIVE SYMBOLS: Use only plain text. No stars, diamonds, or emojis.
+  5. FORMAT: 
+     - "QUESTION: [Full Question Text]"
+     - "MARKS: [Weightage]"
+     - "YEAR: [Repeated Years]"
+     - "SOLUTION: [Step-by-step Answer]"
+     - "DIAGRAM_GUIDE: [Detailed visual explanation]";`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -51,23 +58,9 @@ export const generatePremiumPYQs = async (subject: string, chapter: string) => {
   return response.text;
 };
 
-export const generateVisualSolution = async (description: string, subject: string) => {
-  const ai = getAI();
-  const stylePrompt = `Clean educational line diagram for Class 12 ${subject}: ${description}. White background, professional black lines, clear labels. No text except labels. Minimalist style.`;
-  
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: { parts: [{ text: stylePrompt }] },
-    config: { imageConfig: { aspectRatio: "16:9" } }
-  });
-
-  const part = response.candidates[0].content.parts.find(p => p.inlineData);
-  return part?.inlineData?.data || null;
-};
-
 export const generateChapterAudio = async (notes: string, subject: string) => {
   const ai = getAI();
-  const prompt = `Samjhao ye topic Hinglish mein ekdum asaan bhasha mein: ${notes.substring(0, 800)}`;
+  const prompt = `Student, focus! Yeh ${subject} ka important topic hai. Main aapko bookish language ko asaan Hinglish mein samjhata hoon: ${notes.substring(0, 800)}`;
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
     contents: [{ parts: [{ text: prompt }] }],
@@ -88,7 +81,7 @@ export const chatWithTutor = async (history: any[], message: string) => {
   const chat = ai.chats.create({
     model: 'gemini-3-flash-preview',
     config: {
-      systemInstruction: 'You are AceBot. Help students with Class 12 doubts in simple Hinglish. No excessive symbols. Direct, marking-scheme oriented answers only.',
+      systemInstruction: 'You are AceBot. Provide full, professional board exam solutions. No decorative symbols. Proper step-by-step calculation is mandatory. Instead of images, provide detailed text descriptions of diagrams.',
     }
   });
   const response = await chat.sendMessage({ message });

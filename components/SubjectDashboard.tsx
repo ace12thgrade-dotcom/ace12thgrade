@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Subject, Chapter } from '../types.ts';
-import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio, generateVisualSolution } from '../services/geminiService.ts';
+import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio } from '../services/geminiService.ts';
 
 interface SubjectDashboardProps {
   subject: Subject;
@@ -33,43 +33,6 @@ async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: 
   return buffer;
 }
 
-const VisualSolution: React.FC<{ description: string, subject: string, autoLoad?: boolean }> = ({ description, subject, autoLoad = false }) => {
-  const [img, setImg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const loadVisual = async () => {
-    setLoading(true);
-    try {
-      const data = await generateVisualSolution(description, subject);
-      if (data) setImg(data);
-    } catch (e) {}
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (autoLoad) loadVisual();
-  }, [autoLoad]);
-
-  return (
-    <div className="my-6">
-      {!img && !loading && (
-        <button 
-          onClick={loadVisual}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600/10 border border-indigo-500/20 rounded-xl hover:bg-indigo-600/20 transition-all text-[9px] font-black uppercase tracking-widest text-indigo-400"
-        >
-          📷 View Diagram
-        </button>
-      )}
-      {loading && <div className="text-[9px] font-bold text-indigo-400/50 animate-pulse py-2">Generating visual...</div>}
-      {img && (
-        <div className="bg-white rounded-2xl p-1.5 shadow-2xl overflow-hidden mt-4 border border-slate-200 inline-block max-w-full">
-           <img src={`data:image/png;base64,${img}`} className="w-full h-auto max-h-[400px] object-contain rounded-xl" alt="Diagram" />
-        </div>
-      )}
-    </div>
-  );
-};
-
 const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: boolean }> = ({ content, subject, isPyq }) => {
   const lines = content.split('\n');
   const sections: { title: string; lines: string[] }[] = [];
@@ -79,68 +42,91 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
     const trimmed = line.trim();
     if (!trimmed) return;
 
-    if (trimmed.startsWith('TOPIC:') || trimmed.startsWith('QUESTION:') || (trimmed.startsWith('#') && !trimmed.startsWith('##'))) {
+    if (trimmed.startsWith('QUESTION:') || trimmed.startsWith('TOPIC:') || (trimmed.startsWith('#') && !trimmed.startsWith('##'))) {
       if (currentSection) sections.push(currentSection);
-      currentSection = { title: trimmed.replace(/TOPIC:|QUESTION:|#/g, '').trim(), lines: [] };
+      const cleanTitle = trimmed.replace(/QUESTION:|TOPIC:|#/g, '').trim();
+      currentSection = { title: cleanTitle, lines: [] };
     } else if (currentSection) {
       currentSection.lines.push(line);
     } else {
-      if (!currentSection) currentSection = { title: "Introduction", lines: [line] };
+      if (!currentSection) currentSection = { title: "Exam Overview", lines: [line] };
       else currentSection.lines.push(line);
     }
   });
   if (currentSection) sections.push(currentSection);
 
   return (
-    <div className="space-y-12 max-w-4xl mx-auto pb-32">
+    <div className="space-y-10 lg:space-y-12 w-full max-w-5xl mx-auto pb-24 px-2 lg:px-4">
       {sections.map((section, idx) => (
-        <div key={idx} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          {/* Light Box Header */}
-          <div className="flex items-center gap-3 mb-4 ml-1">
-            <div className="w-1 h-5 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.4)]"></div>
-            <h3 className="text-sm lg:text-base font-black text-white uppercase tracking-wider">{section.title}</h3>
+        <div key={idx} className="animate-in fade-in slide-in-from-bottom-6 duration-700 w-full overflow-hidden">
+          {/* Section Heading */}
+          <div className="flex items-center gap-4 mb-5 px-2">
+            <div className={`w-2 h-6 rounded-full shadow-xl ${isPyq ? 'bg-orange-500 shadow-orange-500/50' : 'bg-indigo-500 shadow-indigo-500/50'}`}></div>
+            <h3 className="text-sm lg:text-xl font-black text-white uppercase tracking-tight leading-none break-words max-w-[95%]">
+              {section.title}
+            </h3>
           </div>
 
-          {/* Light Box Body */}
-          <div className="glass rounded-[2rem] p-8 lg:p-10 border border-white/5 hover:border-indigo-500/20 transition-all duration-500 shadow-xl group/box">
-            <div className="space-y-5">
+          {/* Solution Body (Textbook Style) scaled down for efficiency */}
+          <div className="bg-[#0f172a]/90 backdrop-blur-3xl rounded-[2rem] lg:rounded-[3rem] p-6 lg:p-12 border border-white/10 hover:border-indigo-500/30 transition-all duration-1000 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative group/box overflow-hidden w-full">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/[0.04] rounded-full blur-[120px] pointer-events-none group-hover/box:bg-indigo-500/[0.08] transition-all"></div>
+            
+            <div className="space-y-6 relative z-10 w-full">
               {section.lines.map((line, lIdx) => {
                 const trimmed = line.trim();
                 
-                if (trimmed.includes('[DIAGRAM:')) {
-                  const match = trimmed.match(/\[DIAGRAM:\s*(.*?)\]/);
-                  if (match && match[1]) return <VisualSolution key={lIdx} description={match[1]} subject={subject} autoLoad={isPyq} />;
-                }
-
-                if (trimmed.startsWith('YEAR:') || trimmed.startsWith('INSIGHT:')) {
-                  const label = trimmed.split(':')[0];
-                  const body = trimmed.split(':').slice(1).join(':').trim();
+                if (trimmed.startsWith('DIAGRAM_GUIDE:')) {
+                  const body = trimmed.replace('DIAGRAM_GUIDE:', '').trim();
                   return (
-                    <div key={lIdx} className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded ${label === 'YEAR' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                        {label}
-                      </span>
-                      <p className="text-slate-400 text-[11px] font-bold">{body}</p>
-                    </div>
-                  );
-                }
-
-                if (trimmed.startsWith('SOLUTION:') || trimmed.startsWith('DEFINITION:') || trimmed.startsWith('FORMULA:')) {
-                  const label = trimmed.split(':')[0];
-                  const body = trimmed.split(':').slice(1).join(':').trim();
-                  return (
-                    <div key={lIdx} className="bg-indigo-500/5 p-6 rounded-2xl border border-indigo-500/10 mt-3 group-hover/box:bg-indigo-500/10 transition-colors">
-                      <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2 block">{label}</span>
-                      <p className="text-slate-200 text-sm lg:text-[17px] font-medium leading-relaxed whitespace-pre-line">
+                    <div key={lIdx} className="bg-emerald-500/5 p-6 lg:p-8 rounded-[1.5rem] border border-emerald-500/10 mt-6 group-hover/box:bg-emerald-500/10 transition-all duration-700 w-full relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+                      <div className="flex items-center gap-3 mb-4">
+                         <span className="text-[10px] lg:text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em]">DIAGRAM GUIDE</span>
+                      </div>
+                      <p className="text-emerald-50/90 text-xs lg:text-[16px] font-medium leading-[1.6] tracking-tight whitespace-pre-line break-words italic">
                         {body}
                       </p>
                     </div>
                   );
                 }
 
+                if (trimmed.startsWith('YEAR:') || trimmed.startsWith('MARKS:') || trimmed.startsWith('INSIGHT:')) {
+                  const label = trimmed.split(':')[0];
+                  const body = trimmed.split(':').slice(1).join(':').trim();
+                  return (
+                    <div key={lIdx} className="flex items-center gap-4 mb-4 flex-wrap">
+                      <span className={`px-3 py-1 text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em] rounded-lg border ${
+                        label === 'YEAR' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                        label === 'MARKS' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                        'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                      }`}>
+                        {label}
+                      </span>
+                      <p className="text-slate-400 text-xs lg:text-sm font-black tracking-tight">{body}</p>
+                    </div>
+                  );
+                }
+
+                if (trimmed.startsWith('SOLUTION:') || trimmed.startsWith('PROCEDURE:') || trimmed.startsWith('CALCULATION:') || trimmed.startsWith('PROOF:')) {
+                  const label = trimmed.split(':')[0];
+                  const body = trimmed.split(':').slice(1).join(':').trim();
+                  return (
+                    <div key={lIdx} className="bg-white/[0.02] p-6 lg:p-10 rounded-[2rem] border border-white/5 mt-6 group-hover/box:bg-white/[0.04] transition-all duration-700 w-full relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
+                      <div className="flex items-center gap-3 mb-6">
+                         <span className="text-[10px] lg:text-[11px] font-black text-indigo-400 uppercase tracking-[0.5em]">BOARD SOLUTION</span>
+                      </div>
+                      <div className="text-slate-200 text-sm lg:text-[18px] font-medium leading-[1.8] tracking-tight whitespace-pre-line break-words">
+                        {body}
+                      </div>
+                    </div>
+                  );
+                }
+
+                const isHeading = trimmed === trimmed.toUpperCase() && trimmed.length > 5;
                 return (
-                  <p key={lIdx} className="text-slate-400 text-sm lg:text-[16px] font-normal leading-relaxed">
-                    {trimmed.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="text-white font-extrabold">{part}</strong> : part)}
+                  <p key={lIdx} className={`text-slate-300 leading-relaxed tracking-tight px-1 break-words ${isHeading ? 'text-white font-black text-sm lg:text-xl mt-8 mb-4' : 'text-xs lg:text-[16px] font-medium opacity-90'}`}>
+                    {trimmed.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="text-white font-black">{part}</strong> : part)}
                   </p>
                 );
               })}
@@ -190,7 +176,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
         setContent(result);
       } catch (e: any) {
         console.error("Fetch Error:", e);
-        setError(e.message || "Failed to connect to AI Hub. Check your API Key.");
+        setError("Network sync error. Verify your Netlify Environment API_KEY.");
       } finally {
         setLoading(false);
       }
@@ -234,68 +220,75 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
   );
 
   return (
-    <div className="flex-1 px-4 lg:px-20 py-6 lg:py-10">
+    <div className="flex-1 px-4 lg:px-12 py-8 lg:py-12 max-w-full overflow-x-hidden">
       {!selectedChapter ? (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <header className="mb-10 lg:mb-16">
-            <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-4 flex items-center gap-4">
-              <span className="opacity-50 text-3xl">{subject.icon}</span> {subject.name}
-            </h1>
-            <p className="text-slate-500 font-bold tracking-tight text-sm lg:text-base">Targeting 2026 Boards with AI-Driven Data Analysis.</p>
+        <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000">
+          <header className="mb-10 lg:mb-20 text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+              <div className="w-20 h-20 lg:w-32 lg:h-32 rounded-[2rem] lg:rounded-[3rem] bg-indigo-600 text-white flex items-center justify-center text-4xl lg:text-7xl shadow-3xl rotate-3 hover:rotate-0 transition-all duration-1000">
+                {subject.icon}
+              </div>
+              <div>
+                <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter leading-none mb-4">{subject.name}</h1>
+                <p className="text-slate-500 text-sm lg:text-xl font-bold max-w-3xl tracking-tight leading-snug">
+                  4250+ Questions analyzed for Board Success.
+                </p>
+              </div>
+            </div>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-10 pb-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-10 pb-24">
             {filteredChapters.map((chapter) => (
               <div 
                 key={chapter.id} 
                 onClick={() => { setSelectedChapter(chapter); setViewMode('summary'); }} 
-                className="premium-card p-10 rounded-[2.5rem] cursor-pointer group"
+                className="premium-card p-8 lg:p-12 rounded-[2.5rem] lg:rounded-[4rem] cursor-pointer group"
               >
-                <div className="w-12 h-12 bg-indigo-600/10 rounded-2xl flex items-center justify-center text-xl mb-8 group-hover:bg-indigo-600 transition-all duration-500">📑</div>
-                <h3 className="font-black text-xl text-white mb-4 tracking-tight leading-tight group-hover:text-indigo-400 transition-colors">{chapter.title}</h3>
-                <p className="text-slate-500 text-[11px] font-bold leading-relaxed mb-10 line-clamp-2">{chapter.description}</p>
-                <div className="flex items-center justify-between pt-6 border-t border-white/5">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Unit {chapter.id.replace(/\D/g, '')}</span>
-                   <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:scale-125 transition-transform">→</div>
+                <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/5 rounded-[1.5rem] flex items-center justify-center text-2xl lg:text-4xl mb-8 group-hover:bg-indigo-600 transition-all duration-700 shadow-xl">📑</div>
+                <h3 className="font-black text-xl lg:text-3xl text-white mb-4 tracking-tight leading-tight group-hover:text-indigo-400 transition-colors">{chapter.title}</h3>
+                <p className="text-slate-500 text-xs lg:text-base font-bold leading-relaxed mb-10 line-clamp-3">{chapter.description}</p>
+                <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                   <span className="text-[10px] lg:text-[12px] font-black uppercase tracking-[0.4em] text-indigo-500">Unit {chapter.id.replace(/\D/g, '')}</span>
+                   <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:scale-110 transition-all duration-700 shadow-2xl">→</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 w-full overflow-hidden">
           <button 
             onClick={() => { setSelectedChapter(null); stopAudio(); }} 
-            className="mb-8 flex items-center gap-2 text-slate-500 font-black text-[9px] tracking-[0.3em] bg-white/5 hover:bg-indigo-600 hover:text-white px-8 py-4 rounded-full border border-white/5 active:scale-95 transition-all"
+            className="mb-8 lg:mb-12 flex items-center gap-4 text-slate-500 font-black text-[10px] lg:text-[12px] tracking-[0.4em] bg-white/5 hover:bg-indigo-600 hover:text-white px-8 lg:px-12 py-4 lg:py-6 rounded-full border border-white/10 active:scale-95 transition-all shadow-xl"
           >
-            ← BACK TO HUB
+            ← BACK TO ARCHIVE
           </button>
           
-          <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[3rem] border border-white/5 shadow-2xl overflow-hidden">
-            <div className="p-10 lg:p-20 bg-gradient-to-br from-indigo-950/20 to-slate-950 text-white relative">
-              <div className="absolute top-0 right-0 w-full h-full bg-indigo-500/5 rounded-full blur-[100px]"></div>
+          <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[3rem] lg:rounded-[4rem] border border-white/10 shadow-[0_60px_150px_-30px_rgba(0,0,0,0.9)] overflow-hidden w-full">
+            <div className="p-10 lg:p-24 bg-gradient-to-br from-indigo-950/30 via-slate-950 to-black text-white relative">
+              <div className="absolute top-0 right-0 w-full h-full bg-indigo-500/5 rounded-full blur-[200px] pointer-events-none"></div>
               <div className="relative z-10">
-                <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.6em] mb-4 block">Archive Analysis Active</span>
-                <h2 className="text-3xl lg:text-6xl font-black tracking-tighter leading-tight max-w-3xl">{selectedChapter.title}</h2>
+                <span className="text-[10px] lg:text-[12px] font-black text-indigo-400 uppercase tracking-[0.8em] mb-6 lg:mb-10 block">Knowledge Sync Active</span>
+                <h2 className="text-3xl lg:text-6xl font-black tracking-tighter leading-tight max-w-[95%]">{selectedChapter.title}</h2>
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row border-b border-white/5 px-6 lg:px-12 bg-slate-950/50 items-center justify-between gap-4 py-0 relative z-30">
-              <div className="flex gap-4 lg:gap-8 overflow-x-auto no-scrollbar w-full lg:w-auto">
+            <div className="flex flex-col lg:flex-row border-b border-white/10 px-8 lg:px-16 bg-slate-950/70 items-center justify-between gap-6 py-0 relative z-30 overflow-x-auto lg:overflow-visible no-scrollbar">
+              <div className="flex gap-4 lg:gap-12 overflow-x-auto no-scrollbar w-full lg:w-auto">
                 {[
                   { id: 'summary', label: 'STRATEGY', icon: '💎' },
-                  { id: 'notes', label: 'NOTES', icon: '📝' },
-                  { id: 'pyqs', label: 'BOARD MIQs', icon: '🔥' }
+                  { id: 'notes', label: 'THEORY', icon: '📝' },
+                  { id: 'pyqs', label: 'MIQS', icon: '🔥' }
                 ].map((tab) => (
                   <button 
                     key={tab.id} 
                     disabled={loading}
                     onClick={() => setViewMode(tab.id as any)} 
-                    className={`px-4 lg:px-6 py-8 text-[10px] font-black tracking-[0.3em] transition-all border-b-2 flex items-center gap-3 whitespace-nowrap ${
-                      viewMode === tab.id ? `border-indigo-500 text-white bg-white/5` : 'border-transparent text-slate-500 hover:text-slate-300'
+                    className={`px-4 lg:px-10 py-8 lg:py-12 text-[10px] lg:text-[12px] font-black tracking-[0.4em] transition-all border-b-4 flex items-center gap-4 lg:gap-6 whitespace-nowrap ${
+                      viewMode === tab.id ? `border-indigo-500 text-white bg-white/10` : 'border-transparent text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    <span className="text-xl">{tab.icon}</span>{tab.label}
+                    <span className="text-xl lg:text-3xl">{tab.icon}</span>{tab.label}
                   </button>
                 ))}
               </div>
@@ -304,48 +297,50 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                 <button 
                   onClick={handleListen} 
                   disabled={isAudioLoading} 
-                  className={`w-full lg:w-auto mb-4 lg:mb-0 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 ${
+                  className={`w-full lg:w-auto mb-6 lg:mb-0 px-8 lg:px-10 py-4 lg:py-5 rounded-[1.5rem] text-[9px] lg:text-[11px] font-black uppercase tracking-[0.5em] transition-all shadow-3xl active:scale-95 flex items-center justify-center gap-4 lg:gap-6 ${
                     isPlaying ? 'bg-red-600' : 'bg-indigo-600'
                   } text-white disabled:opacity-50`}
                 >
-                  {isAudioLoading ? '...' : isPlaying ? '⏹ STOP' : '🔊 HINGLISH LESSON'}
+                  {isAudioLoading ? '...' : isPlaying ? '⏹ STOP' : '🔊 LESSON'}
                 </button>
               )}
             </div>
 
-            <div className="p-8 lg:p-16 min-h-[400px]">
+            <div className="p-6 lg:p-16 min-h-[500px] w-full overflow-hidden">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-6">
-                  <div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Scanning Previous Year Papers...</p>
+                <div className="flex flex-col items-center justify-center py-40 gap-12">
+                  <div className="w-16 h-16 lg:w-24 lg:h-24 border-[8px] lg:border-[10px] border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="text-center">
+                    <p className="text-white font-black text-sm lg:text-xl uppercase tracking-[0.8em] mb-6">Syncing Content</p>
+                    <p className="text-slate-500 text-[10px] lg:text-[12px] font-black uppercase tracking-[0.4em] animate-pulse">Running Analysis...</p>
+                  </div>
                 </div>
               ) : error ? (
-                <div className="text-center py-20 px-10 bg-red-600/5 rounded-[2rem] border border-red-500/20 max-w-2xl mx-auto">
-                  <p className="text-red-400 font-black text-xl mb-4">Connection Blocked</p>
-                  <p className="text-slate-500 text-sm font-bold mb-8">{error}</p>
-                  <button onClick={() => setViewMode(viewMode)} className="px-12 py-5 bg-red-600 text-white rounded-full font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl active:scale-95">RETRY SYNC</button>
+                <div className="text-center py-20 px-8 lg:px-16 bg-red-600/5 rounded-[3rem] border-2 border-red-500/20 max-w-3xl mx-auto shadow-4xl">
+                  <p className="text-red-400 font-black text-xl lg:text-3xl mb-8 tracking-tight leading-none">Sync Error</p>
+                  <p className="text-slate-400 text-sm lg:text-lg font-bold mb-12 leading-relaxed">Check your environment API key settings.</p>
+                  <button onClick={() => setViewMode(viewMode)} className="px-10 lg:px-16 py-4 lg:py-6 bg-red-600 text-white rounded-full font-black text-[10px] lg:text-[12px] uppercase tracking-[0.6em] shadow-xl">RETRY</button>
                 </div>
               ) : viewMode === 'summary' ? (
-                <div className="space-y-12 animate-in fade-in duration-500">
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-12 lg:space-y-16 animate-in fade-in duration-1000 w-full">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10">
                      {[
-                       { label: 'Priority Index', value: 'Level 1', color: 'indigo' },
-                       { label: 'Exam Frequency', value: 'High', color: 'emerald' },
-                       { label: 'Repeat Rate', value: '91%', color: 'purple' }
+                       { label: 'Priority', value: 'High', color: 'indigo' },
+                       { label: 'History', value: 'Repeats', color: 'emerald' },
+                       { label: 'Potential', value: 'Max', color: 'purple' }
                      ].map((stat, i) => (
-                       <div key={i} className="p-10 bg-slate-900/60 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
-                          <div className={`absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl group-hover:bg-indigo-500/10 transition-colors`}></div>
-                          <span className="text-[9px] font-black uppercase text-slate-600 tracking-widest block mb-6">{stat.label}</span>
-                          <p className="text-4xl font-black text-white tracking-tighter">{stat.value}</p>
+                       <div key={i} className="p-8 lg:p-12 bg-slate-900/60 border border-white/5 rounded-[2.5rem] lg:rounded-[3rem] relative overflow-hidden group">
+                          <div className={`absolute -top-10 -right-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-1000`}></div>
+                          <span className="text-[10px] lg:text-[11px] font-black uppercase text-slate-500 tracking-[0.4em] block mb-8">{stat.label}</span>
+                          <p className="text-4xl lg:text-7xl font-black text-white tracking-tighter leading-none">{stat.value}</p>
                        </div>
                      ))}
                    </div>
-                   <div className="p-10 lg:p-14 bg-indigo-600/5 border border-indigo-500/10 rounded-[3rem] relative">
-                      <h3 className="text-xl lg:text-2xl font-black text-white tracking-tighter uppercase mb-6">Expert Prep Advice</h3>
-                      <p className="text-slate-400 font-bold leading-relaxed text-base lg:text-lg tracking-tight">
-                        Our analysis from 4250+ papers suggests that examiners prioritize the <span className="text-indigo-400">Section B (3 Marks)</span> 
-                        from this unit. Focus heavily on the <span className="text-indigo-400">Direct Definitions</span> provided in the notes. 
-                        Do not skip the diagrams in the MIQs tab; they carry 20% weightage here.
+                   <div className="p-8 lg:p-16 bg-indigo-600/5 border-4 border-indigo-500/10 rounded-[3rem] lg:rounded-[4rem] relative shadow-4xl">
+                      <h3 className="text-xl lg:text-3xl font-black text-white tracking-tighter uppercase mb-8 lg:mb-12">Scoring Blueprint</h3>
+                      <p className="text-slate-400 font-bold leading-relaxed text-sm lg:text-[24px] tracking-tight">
+                        Focus on the <span className="text-indigo-400">Premium MIQs</span>. 
+                        We've included **Diagram Guides** for fixtures and graphs so you know exactly how to draw them in 2026.
                       </p>
                    </div>
                 </div>
