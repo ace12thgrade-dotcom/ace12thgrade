@@ -10,7 +10,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSubject, setActiveSubject }) => {
   return (
-    <div className="w-16 md:w-20 lg:w-64 bg-slate-950/60 backdrop-blur-3xl border-r border-white/5 h-screen sticky top-0 flex flex-col z-40 transition-all duration-500">
+    <div className="w-16 md:w-20 lg:w-64 bg-slate-950/60 backdrop-blur-3xl border-r border-white/5 h-full sticky top-0 flex flex-col z-40 transition-all duration-500 shrink-0">
       <div className="p-4 lg:p-8 flex items-center justify-center lg:justify-start gap-4">
         <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 rounded-xl lg:rounded-2xl flex items-center justify-center text-white font-black text-xl lg:text-2xl shadow-2xl shadow-indigo-500/20 transform -rotate-3 hover:rotate-0 transition-all duration-500 cursor-pointer">
           A

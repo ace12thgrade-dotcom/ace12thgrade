@@ -7,29 +7,12 @@ const AdBanner: React.FC = () => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear previous content
-    containerRef.current.innerHTML = '';
-
-    // Set the global atOptions required by Adsterra
-    (window as any).atOptions = {
-      'key': '22f76c9da64add65e5b5d83a9e570782',
-      'format': 'iframe',
-      'height': 300,
-      'width': 160,
-      'params': {}
-    };
-
-    // Create and append the script
+    // Adsterra scripts work best when injected into the DOM directly after the placeholder
     const script = document.createElement('script');
     script.src = 'https://www.highperformanceformat.com/22f76c9da64add65e5b5d83a9e570782/invoke.js';
     script.async = true;
     
     containerRef.current.appendChild(script);
-
-    return () => {
-      // Cleanup global to avoid conflicts
-      delete (window as any).atOptions;
-    };
   }, []);
 
   return (

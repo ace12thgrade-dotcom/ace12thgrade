@@ -36,14 +36,14 @@ const App: React.FC = () => {
   });
 
   return (
-    <div className="flex h-screen w-full bg-[#020617] selection:bg-indigo-500/30 overflow-hidden">
+    <div className="flex h-[100dvh] w-full bg-[#020617] selection:bg-indigo-500/30 overflow-hidden">
       <Sidebar 
         activeSubject={activeSubjectId} 
         setActiveSubject={setActiveSubjectId} 
       />
 
-      <main className="flex-1 flex flex-col h-full min-w-0 relative">
-        <header className="h-20 lg:h-24 bg-slate-950/40 backdrop-blur-md border-b border-white/5 px-6 lg:px-12 flex items-center justify-between sticky top-0 z-30 shrink-0">
+      <main className="flex-1 flex flex-col min-w-0 relative h-full">
+        <header className="h-20 lg:h-24 bg-slate-950/40 backdrop-blur-md border-b border-white/5 px-4 lg:px-12 flex items-center justify-between sticky top-0 z-30 shrink-0">
           <div className="flex-1 max-w-2xl hidden md:block">
             <div className="relative group">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-indigo-400 transition-colors">
@@ -61,7 +61,7 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-4 lg:gap-10">
+          <div className="flex items-center gap-3 lg:gap-10">
             <div className="flex -space-x-2 lg:-space-x-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="w-8 h-8 lg:w-12 lg:h-12 rounded-lg lg:rounded-[1.2rem] border-2 lg:border-4 border-slate-950 overflow-hidden shadow-2xl">
@@ -80,7 +80,7 @@ const App: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth w-full flex flex-col">
-          <div className="flex-1">
+          <div className="flex-1 px-2 md:px-0">
             <SubjectDashboard 
               subject={activeSubject} 
               searchQuery={searchQuery} 
@@ -89,8 +89,7 @@ const App: React.FC = () => {
             />
           </div>
           
-          {/* Subtle Minimal Footer Section */}
-          <footer className="mt-12 px-6 lg:px-12 py-6 border-t border-white/5 bg-slate-950/40">
+          <footer className="mt-auto px-4 lg:px-12 py-6 border-t border-white/5 bg-slate-950/40">
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex gap-6 lg:gap-10">
                 <button onClick={openAbout} className="text-[9px] font-black text-slate-500 hover:text-indigo-400 uppercase tracking-[0.3em] transition-colors">About Us</button>
@@ -111,19 +110,19 @@ const App: React.FC = () => {
       {/* Info Modal */}
       {modalContent && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300"
           onClick={() => setModalContent(null)}
         >
           <div 
-            className="bg-slate-900 border border-white/10 rounded-[2rem] lg:rounded-[3rem] p-8 lg:p-12 max-w-xl w-full shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] relative overflow-hidden"
+            className="bg-slate-900 border border-white/10 rounded-[2rem] lg:rounded-[3rem] p-6 lg:p-12 max-w-xl w-full shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] relative overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
-            <h3 className="text-xl lg:text-3xl font-black text-white mb-6 lg:mb-8 tracking-tighter uppercase">{modalContent.title}</h3>
+            <h3 className="text-xl lg:text-3xl font-black text-white mb-4 lg:mb-8 tracking-tighter uppercase">{modalContent.title}</h3>
             <p className="text-slate-300 text-xs lg:text-base font-medium leading-relaxed whitespace-pre-wrap">{modalContent.body}</p>
             <button 
               onClick={() => setModalContent(null)}
-              className="mt-10 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-black text-[9px] lg:text-[10px] uppercase tracking-[0.4em] transition-all shadow-xl active:scale-95"
+              className="mt-8 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-black text-[9px] lg:text-[10px] uppercase tracking-[0.4em] transition-all shadow-xl active:scale-95"
             >
               Understand
             </button>

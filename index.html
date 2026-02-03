@@ -3,8 +3,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Ace12 - Dark Aesthetic CBSE Study Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ace12 - Premium CBSE Study Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -22,8 +22,12 @@
             background-color: var(--bg-base);
             color: #e2e8f0;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
+            overflow: hidden; 
             font-size: 14px;
+            height: 100dvh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
         }
         
         .mesh-bg {
@@ -38,18 +42,6 @@
             filter: blur(80px);
         }
 
-        h1, h2, h3, .font-heading {
-            font-family: 'Outfit', sans-serif;
-            letter-spacing: -0.01em;
-        }
-
-        .glass {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -59,12 +51,6 @@
             backdrop-filter: blur(8px);
             box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.4);
             transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-
-        .premium-card:hover {
-            transform: translateY(-4px);
-            background: rgba(30, 41, 59, 0.5);
-            border-color: rgba(129, 140, 248, 0.2);
         }
     </style>
 <script type="importmap">
@@ -77,11 +63,21 @@
   }
 }
 </script>
-<script src="https://pl28636133.effectivegatecpm.com/7d/64/cc/7d64cc711b40564f5f77ab6854b8f712.js"></script>
 </head>
 <body>
     <div class="mesh-bg"></div>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
+    
+    <!-- Adsterra Banner Setup -->
+    <script type="text/javascript">
+      atOptions = {
+        'key' : '22f76c9da64add65e5b5d83a9e570782',
+        'format' : 'iframe',
+        'height' : 300,
+        'width' : 160,
+        'params' : {}
+      };
+    </script>
 </body>
 </html>

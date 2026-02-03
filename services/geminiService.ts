@@ -15,31 +15,37 @@ export const generateDetailedNotes = async (subject: string, chapter: string) =>
   
   const prompt = isRevision 
     ? `Act as a Class 12 Subject Expert. Subject: ${subject}. 
-       TASK: Create the "ULTIMATE MASTER REVISION CHEAT SHEET" for the entire Class 12 syllabus.
+       TASK: Create the "ULTIMATE MASTER REVISION CHEAT SHEET".
        
-       STRICT CONTENT REQUIREMENTS:
-       1. COMPLETE FORMULA BANK: List every single formula (Mathematical, Physical, or Chemical) found in the Class 12 syllabus for ${subject}. Organize them chapter-wise. No exceptions.
-       2. HIGH-YIELD TOPIC LIST: For every chapter in the syllabus, identify the top 3-5 topics that have appeared most frequently in the last 15 years of board exams.
-       3. CORE LAWS & THEOREMS: Provide a consolidated list of all major Laws, Theorems, and Principles for the entire subject.
-       4. MNEMONICS & SHORTCUTS: Include memory tricks or calculation shortcuts where applicable for revision.
-       5. 2026 BOARD PREDICTIONS: Based on 15 years of analysis, mention which topics are "Must-Prepare" for the 2026 exam.
+       STRICT SYMBOL RULES:
+       - DO NOT use LaTeX delimiters like $ or \( or \).
+       - DO NOT use backslashes (\) or curly braces ({}) in formulas.
+       - ONLY use plain Unicode symbols (e.g., ∫, ∑, Δ, θ, λ, μ, π, ε₀).
+       - Use proper Unicode subscripts (₀₁₂₃₄₅₆₇₈₉) and superscripts (⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻).
+       - Formulas must look like clear, readable textbook text.
        
-       STRICT FORMATTING:
-       - Use "TOPIC: [Chapter/Unit Name]" for major headers.
-       - Use bullet points and structured lists for high-speed reading.
-       - NO decorative symbols (stars, emojis, etc.).
-       - Use "DIAGRAM_GUIDE: [Description]" to describe how to draw critical diagrams for the whole subject.
-       - The response should be extremely comprehensive, dense, and cover 4-5 pages worth of content in one go.`
+       CONTENT:
+       1. COMPLETE FORMULA BANK for the entire syllabus.
+       2. HIGH-YIELD TOPIC LIST.
+       3. CORE LAWS & THEOREMS.
+       
+       FORMATTING:
+       - Use "TOPIC: [Name]" for headers.
+       - Use "DIAGRAM_GUIDE: [Description]" for visuals.`
     : `Act as a Class 12 Subject Expert. Subject: ${subject}, Chapter: ${chapter}.
   
-       TASK: Create full, comprehensive book-standard notes.
+       TASK: Create full textbook-standard notes.
   
-       STRICT RULES:
-       1. NO TRUNCATION: Provide full, high-quality definitions and detailed explanations.
-       2. NO DECORATIVE SYMBOLS: No stars, diamonds, or emojis.
-       3. STRUCTURE: Use "TOPIC: [Name]" for headers.
-       4. LANGUAGE: Simple Hinglish for explanation, but Formal Academic English for core definitions.
-       5. DIAGRAM DESCRIPTION: Use "DIAGRAM_GUIDE: [Description]" to explain essential visuals in text.`;
+       STRICT SYMBOL RULES:
+       - NO LaTeX ($ symbols are strictly forbidden).
+       - NO backslashes (\) in equations.
+       - ONLY use Unicode (∫, ∑, ∂, ∞, θ, π, subscripts, superscripts).
+       - Make it look like a clean digital textbook.
+       
+       FORMATTING:
+       - Use "TOPIC: [Name]" for headers.
+       - Use simple Hinglish for explanation, Formal English for definitions.
+       - Use "DIAGRAM_GUIDE: [Description]" for visuals.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -54,21 +60,19 @@ export const generatePremiumPYQs = async (subject: string, chapter: string) => {
   
   const prompt = `Act as a Senior CBSE Board Examiner. Analyze 15 years of papers for Subject: ${subject}, ${isRevision ? 'the Entire Syllabus' : `Chapter: ${chapter}`}.
   
-  TASK: Provide 10-12 "Sure-Shot" Board Questions (High Frequency).
+  TASK: Provide 10-12 "Sure-Shot" Board Questions.
   
-  STRICT INSTRUCTIONS:
-  1. FULL QUESTION TEXT: Write the COMPLETE question exactly as it appears in the official exam paper. 
-  2. BOOK-STYLE SOLUTION: Provide full procedural solutions.
-  3. ${isRevision ? 'Select questions from EVERY major unit of the syllabus to provide a complete revision overview.' : ''}
-  4. TEXT-BASED DIAGRAM GUIDE: Use "DIAGRAM_GUIDE: [Detailed Explanation]".
-  5. NO DECORATIVE SYMBOLS.
+  STRICT SYMBOL RULES:
+  - NO LaTeX ($ signs are BANNED).
+  - NO backslashes (\) or math code blocks.
+  - ONLY use clear Unicode math symbols (∫, ∑, Δ, θ, subscripts, superscripts).
   
   FORMAT: 
   - "QUESTION: [Full Question Text]"
   - "MARKS: [Weightage]"
   - "YEAR: [Repeated Years]"
-  - "SOLUTION: [Step-by-step Answer]"
-  - "DIAGRAM_GUIDE: [Detailed visual explanation]";`;
+  - "SOLUTION: [Step-by-step Answer using Unicode symbols]"
+  - "DIAGRAM_GUIDE: [Visual explanation]";`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -100,7 +104,7 @@ export const chatWithTutor = async (history: any[], message: string) => {
   const chat = ai.chats.create({
     model: 'gemini-3-flash-preview',
     config: {
-      systemInstruction: 'You are AceBot. Provide full, professional board exam solutions. No decorative symbols. Proper step-by-step calculation is mandatory. Instead of images, provide detailed text descriptions of diagrams.',
+      systemInstruction: 'You are AceBot. Provide board solutions. STRICT: No LaTeX ($ or \). Use only pure Unicode symbols for math. Keep layout clean for mobile.',
     }
   });
   const response = await chat.sendMessage({ message });
