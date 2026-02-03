@@ -9,12 +9,28 @@ import { SubjectId } from './types.ts';
 const App: React.FC = () => {
   const [activeSubjectId, setActiveSubjectId] = useState<SubjectId>('physics');
   const [searchQuery, setSearchQuery] = useState('');
+  const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
   
   const activeSubject = SUBJECTS.find(s => s.id === activeSubjectId)!;
 
   useEffect(() => {
     setSearchQuery('');
   }, [activeSubjectId]);
+
+  const openAbout = () => setModalContent({
+    title: 'About Ace12',
+    body: 'Ace12 is a premium, AI-driven study hub specifically engineered for Class 12 CBSE students. Our platform synthesizes over 15 years of board exam data to provide you with high-yield notes, formulas, and 4250+ analyzed questions. We eliminate the fluff, focusing on what actually appears in the 2026 Boards.'
+  });
+
+  const openContact = () => setModalContent({
+    title: 'Contact Us',
+    body: 'For support, feedback, or business inquiries, please reach out to our dedicated team at:\n\n📧 Email: support@ace12.com\n\nWe typically respond within 24 hours to help you ace your exams!'
+  });
+
+  const openPrivacy = () => setModalContent({
+    title: 'Privacy Policy',
+    body: 'At Ace12, we prioritize your academic focus. We do not track personal identities. Your study queries are processed via secure Google Gemini API calls. No personal data is stored or sold to third parties. We are committed to a safe, focused learning environment.'
+  });
 
   return (
     <div className="flex h-screen w-full bg-[#020617] selection:bg-indigo-500/30 overflow-hidden">
@@ -60,12 +76,52 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth w-full">
-          <SubjectDashboard subject={activeSubject} searchQuery={searchQuery} />
+        <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth w-full flex flex-col">
+          <div className="flex-1">
+            <SubjectDashboard subject={activeSubject} searchQuery={searchQuery} />
+          </div>
+          
+          {/* Subtle Minimal Footer Section */}
+          <footer className="mt-12 px-6 lg:px-12 py-6 border-t border-white/5 bg-slate-950/40">
+            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex gap-6 lg:gap-10">
+                <button onClick={openAbout} className="text-[9px] font-black text-slate-500 hover:text-indigo-400 uppercase tracking-[0.3em] transition-colors">About Us</button>
+                <button onClick={openContact} className="text-[9px] font-black text-slate-500 hover:text-indigo-400 uppercase tracking-[0.3em] transition-colors">Contact</button>
+                <button onClick={openPrivacy} className="text-[9px] font-black text-slate-500 hover:text-indigo-400 uppercase tracking-[0.3em] transition-colors">Privacy Policy</button>
+              </div>
+              
+              <div className="text-slate-700 text-[8px] font-bold uppercase tracking-[0.4em]">
+                © 2025 ACE12. ACADEMIC HUB.
+              </div>
+            </div>
+          </footer>
         </div>
       </main>
 
       <ChatInterface />
+
+      {/* Info Modal */}
+      {modalContent && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300"
+          onClick={() => setModalContent(null)}
+        >
+          <div 
+            className="bg-slate-900 border border-white/10 rounded-[2rem] lg:rounded-[3rem] p-8 lg:p-12 max-w-xl w-full shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] relative overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
+            <h3 className="text-xl lg:text-3xl font-black text-white mb-6 lg:mb-8 tracking-tighter uppercase">{modalContent.title}</h3>
+            <p className="text-slate-300 text-xs lg:text-base font-medium leading-relaxed whitespace-pre-wrap">{modalContent.body}</p>
+            <button 
+              onClick={() => setModalContent(null)}
+              className="mt-10 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-black text-[9px] lg:text-[10px] uppercase tracking-[0.4em] transition-all shadow-xl active:scale-95"
+            >
+              Understand
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
