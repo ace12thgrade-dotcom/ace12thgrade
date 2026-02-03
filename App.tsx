@@ -4,17 +4,20 @@ import Sidebar from './components/Sidebar.tsx';
 import SubjectDashboard from './components/SubjectDashboard.tsx';
 import ChatInterface from './components/ChatInterface.tsx';
 import { SUBJECTS } from './constants.tsx';
-import { SubjectId } from './types.ts';
+import { SubjectId, Chapter } from './types.ts';
 
 const App: React.FC = () => {
   const [activeSubjectId, setActiveSubjectId] = useState<SubjectId>('physics');
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
   
   const activeSubject = SUBJECTS.find(s => s.id === activeSubjectId)!;
 
+  // Reset chapter when subject changes
   useEffect(() => {
     setSearchQuery('');
+    setSelectedChapter(null);
   }, [activeSubjectId]);
 
   const openAbout = () => setModalContent({
@@ -78,7 +81,12 @@ const App: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth w-full flex flex-col">
           <div className="flex-1">
-            <SubjectDashboard subject={activeSubject} searchQuery={searchQuery} />
+            <SubjectDashboard 
+              subject={activeSubject} 
+              searchQuery={searchQuery} 
+              selectedChapter={selectedChapter}
+              setSelectedChapter={setSelectedChapter}
+            />
           </div>
           
           {/* Subtle Minimal Footer Section */}

@@ -2,10 +2,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Subject, Chapter } from '../types.ts';
 import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio } from '../services/geminiService.ts';
+import AdBanner from './AdBanner.tsx';
 
 interface SubjectDashboardProps {
   subject: Subject;
   searchQuery?: string;
+  selectedChapter: Chapter | null;
+  setSelectedChapter: (chapter: Chapter | null) => void;
 }
 
 function decodeBase64(base64: string) {
@@ -138,8 +141,7 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
   );
 };
 
-const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuery = '' }) => {
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuery = '', selectedChapter, setSelectedChapter }) => {
   const [viewMode, setViewMode] = useState<'summary' | 'notes' | 'pyqs'>('summary');
   const [loading, setLoading] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -151,7 +153,6 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   useEffect(() => {
-    setSelectedChapter(null);
     setContent(null);
     setViewMode('summary');
     stopAudio();
@@ -239,26 +240,33 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
             </div>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 lg:gap-8 pb-20 px-4">
-            {filteredChapters.map((chapter) => (
-              <div 
-                key={chapter.id} 
-                onClick={() => { setSelectedChapter(chapter); setViewMode('summary'); }} 
-                className={`premium-card p-6 lg:p-8 rounded-[2rem] lg:rounded-[2.5rem] cursor-pointer group ${chapter.id.includes('_rev') ? 'border-purple-500/30 bg-purple-500/5' : ''}`}
-              >
-                <div className={`w-10 h-10 lg:w-14 lg:h-14 rounded-2xl flex items-center justify-center text-xl lg:text-3xl mb-6 transition-all duration-700 shadow-lg ${chapter.id.includes('_rev') ? 'bg-purple-600' : 'bg-white/5 group-hover:bg-indigo-600'}`}>
-                   {chapter.id.includes('_rev') ? '💎' : '📑'}
+          <div className="flex flex-col lg:flex-row gap-8 pb-20 px-4">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-8">
+              {filteredChapters.map((chapter) => (
+                <div 
+                  key={chapter.id} 
+                  onClick={() => { setSelectedChapter(chapter); setViewMode('summary'); }} 
+                  className={`premium-card p-6 lg:p-8 rounded-[2rem] lg:rounded-[2.5rem] cursor-pointer group ${chapter.id.includes('_rev') ? 'border-purple-500/30 bg-purple-500/5' : ''}`}
+                >
+                  <div className={`w-10 h-10 lg:w-14 lg:h-14 rounded-2xl flex items-center justify-center text-xl lg:text-3xl mb-6 transition-all duration-700 shadow-lg ${chapter.id.includes('_rev') ? 'bg-purple-600' : 'bg-white/5 group-hover:bg-indigo-600'}`}>
+                    {chapter.id.includes('_rev') ? '💎' : '📑'}
+                  </div>
+                  <h3 className={`font-black text-lg lg:text-2xl text-white mb-3 tracking-tight leading-tight transition-colors ${chapter.id.includes('_rev') ? 'text-purple-400' : 'group-hover:text-indigo-400'}`}>{chapter.title}</h3>
+                  <p className="text-slate-500 text-[10px] lg:text-sm font-bold leading-relaxed mb-8 line-clamp-2">{chapter.description}</p>
+                  <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                    <span className="text-[9px] lg:text-[11px] font-black uppercase tracking-[0.3em] text-indigo-400/70">
+                        {chapter.id.includes('_rev') ? 'Master Hub' : `Unit ${chapter.id.replace(/\D/g, '')}`}
+                    </span>
+                    <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:translate-x-1 transition-all shadow-xl">→</div>
+                  </div>
                 </div>
-                <h3 className={`font-black text-lg lg:text-2xl text-white mb-3 tracking-tight leading-tight transition-colors ${chapter.id.includes('_rev') ? 'text-purple-400' : 'group-hover:text-indigo-400'}`}>{chapter.title}</h3>
-                <p className="text-slate-500 text-[10px] lg:text-sm font-bold leading-relaxed mb-8 line-clamp-2">{chapter.description}</p>
-                <div className="flex items-center justify-between pt-6 border-t border-white/5">
-                   <span className="text-[9px] lg:text-[11px] font-black uppercase tracking-[0.3em] text-indigo-400/70">
-                      {chapter.id.includes('_rev') ? 'Master Hub' : `Unit ${chapter.id.replace(/\D/g, '')}`}
-                   </span>
-                   <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:translate-x-1 transition-all shadow-xl">→</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Sidebar Ad Banner (Dashboard Only) */}
+            <div className="hidden xl:block w-[160px] shrink-0 sticky top-10 h-fit">
+              <AdBanner />
+            </div>
           </div>
         </div>
       ) : (
