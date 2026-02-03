@@ -143,9 +143,10 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
     setViewMode('summary');
     stopAudio();
     setIsCached(false);
+    setError(null);
   }, [subject]);
 
-  useEffect(() => {
+  const fetchData = async () => {
     if (!selectedChapter || viewMode === 'summary') {
       setContent(null);
       setLoading(false);
@@ -153,39 +154,45 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
       return;
     }
 
-    const fetchData = async () => {
-      const cacheKey = `ace12_cache_${subject.id}_${selectedChapter.id}_${viewMode}`;
-      const cachedContent = localStorage.getItem(cacheKey);
+    const cacheKey = `ace12_cache_${subject.id}_${selectedChapter.id}_${viewMode}`;
+    const cachedContent = localStorage.getItem(cacheKey);
 
-      if (cachedContent) {
-        setContent(cachedContent);
-        setLoading(false);
-        setError(null);
-        setIsCached(true);
-        return;
-      }
-
-      setLoading(true);
-      setContent(null);
+    if (cachedContent) {
+      setContent(cachedContent);
+      setLoading(false);
       setError(null);
-      setIsCached(false);
-      stopAudio();
-      try {
-        const result = viewMode === 'notes' 
-          ? await generateDetailedNotes(subject.name, selectedChapter.title)
-          : await generatePremiumPYQs(subject.name, selectedChapter.title);
-        
-        if (result) {
-          localStorage.setItem(cacheKey, result);
-          setContent(result);
-          setIsCached(true);
-        }
-      } catch (e: any) {
-        setError("Network sync error. Check API settings.");
-      } finally {
-        setLoading(false);
+      setIsCached(true);
+      return;
+    }
+
+    setLoading(true);
+    setContent(null);
+    setError(null);
+    setIsCached(false);
+    stopAudio();
+    try {
+      const result = viewMode === 'notes' 
+        ? await generateDetailedNotes(subject.name, selectedChapter.title)
+        : await generatePremiumPYQs(subject.name, selectedChapter.title);
+      
+      if (result) {
+        localStorage.setItem(cacheKey, result);
+        setContent(result);
+        setIsCached(true);
       }
-    };
+    } catch (e: any) {
+      console.error("API Error:", e);
+      if (e.message === "API_KEY_MISSING") {
+        setError("API Key Missing: Please add 'API_KEY' to Netlify environment variables and redeploy.");
+      } else {
+        setError("Failed to fetch content. Please check your internet connection or API Key limits.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [viewMode, selectedChapter, subject.id, subject.name]);
 
@@ -271,7 +278,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
             >
               ← BACK
             </button>
-            {isCached && (
+            {isCached && !error && (
               <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Saved to Device</span>
@@ -299,7 +306,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                   </button>
                 ))}
               </div>
-              {viewMode === 'notes' && content && !loading && (
+              {viewMode === 'notes' && content && !loading && !error && (
                 <button 
                   onClick={handleListen} 
                   disabled={isAudioLoading} 
@@ -315,6 +322,17 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                 <div className="flex flex-col items-center justify-center py-20 gap-6">
                   <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                   <p className="text-slate-500 text-[10px] font-black tracking-[0.3em]">FETCHING CONTENT...</p>
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-6 text-center animate-in fade-in">
+                  <div className="text-4xl">⚠️</div>
+                  <p className="text-white text-xs lg:text-base font-black uppercase tracking-widest">{error}</p>
+                  <button 
+                    onClick={fetchData} 
+                    className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Retry Connection
+                  </button>
                 </div>
               ) : viewMode === 'summary' ? (
                 <div className="space-y-8 animate-in fade-in duration-1000">
