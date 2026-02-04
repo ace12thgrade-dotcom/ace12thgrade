@@ -14,6 +14,33 @@ const App: React.FC = () => {
   
   const activeSubject = SUBJECTS.find(s => s.id === activeSubjectId)!;
 
+  // History management to prevent back-button app closure
+  useEffect(() => {
+    // Initial dummy state to give the browser something to "go back" to within the app
+    if (window.history.state === null) {
+      window.history.replaceState({ page: 'home' }, '');
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      // If a chapter was open, just close it and stay on the app
+      if (selectedChapter) {
+        setSelectedChapter(null);
+        // Push state back so the next back button doesn't exit either
+        window.history.pushState({ page: 'home' }, '');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedChapter]);
+
+  // When a chapter is selected, we push a state to ensure 'back' closes the chapter
+  useEffect(() => {
+    if (selectedChapter) {
+      window.history.pushState({ chapterId: selectedChapter.id }, '');
+    }
+  }, [selectedChapter]);
+
   // Reset chapter when subject changes
   useEffect(() => {
     setSearchQuery('');
