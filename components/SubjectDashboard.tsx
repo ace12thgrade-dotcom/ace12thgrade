@@ -42,65 +42,110 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
   let currentSection: { title: string; lines: string[] } | null = null;
 
   lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
+    const rawLine = line.trim();
+    if (!rawLine) return;
 
-    if (trimmed.startsWith('QUESTION:') || trimmed.startsWith('TOPIC:') || (trimmed.startsWith('#') && !trimmed.startsWith('##'))) {
+    // Remove decorative symbol lines
+    if (/^[\|=_\-\s*●·○#]+$/.test(rawLine) && rawLine.length > 2) return;
+
+    let scrubbed = rawLine.replace(/^(\|)+|(\|)+$/g, '').trim();
+    if (!scrubbed) return;
+
+    const upper = scrubbed.toUpperCase();
+    
+    // Check if we should start a new box
+    const isNewBoxTrigger = 
+      upper.startsWith('TOPIC:') || 
+      upper.startsWith('QUESTION:') || 
+      upper.startsWith('CONCEPT:') ||
+      upper.startsWith('Q:') ||
+      (rawLine.startsWith('# ')) ||
+      (rawLine.startsWith('**') && rawLine.endsWith('**') && rawLine.length < 80);
+
+    if (isNewBoxTrigger) {
       if (currentSection) sections.push(currentSection);
-      const cleanTitle = trimmed.replace(/QUESTION:|TOPIC:|#/g, '').trim();
+      const cleanTitle = scrubbed.replace(/TOPIC:|QUESTION:|CONCEPT:|Q:|#|\*\*/gi, '').trim();
       currentSection = { title: cleanTitle, lines: [] };
     } else if (currentSection) {
-      currentSection.lines.push(line);
+      currentSection.lines.push(scrubbed);
     } else {
-      if (!currentSection) currentSection = { title: isRevision ? "Quick Revision" : "Chapter Concept", lines: [line] };
-      else currentSection.lines.push(line);
+      currentSection = { title: isRevision ? "Chapter Overview" : isPyq ? "MIQ Breakdown" : "Introduction", lines: [scrubbed] };
     }
   });
   if (currentSection) sections.push(currentSection);
 
   return (
-    <div className="space-y-6 lg:space-y-10 w-full max-w-full mx-auto pb-20 px-0 overflow-x-hidden min-w-0">
+    <div className="space-y-12 lg:space-y-24 w-full max-w-full mx-auto pb-32 px-1 overflow-x-hidden min-w-0">
       {sections.map((section, idx) => (
-        <div key={idx} className="animate-in fade-in slide-in-from-bottom-6 duration-700 w-full overflow-hidden min-w-0">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className={`w-1.5 h-5 rounded-full shadow-lg shrink-0 ${isRevision ? 'bg-purple-500' : isPyq ? 'bg-orange-500' : 'bg-indigo-500'}`}></div>
-            <h3 className="text-[14px] lg:text-[18px] font-black text-white uppercase tracking-tight break-words min-w-0">
+        <div key={idx} className="animate-in fade-in slide-in-from-bottom-16 duration-1000 w-full overflow-hidden min-w-0">
+          <div className="flex items-center gap-5 mb-8 px-4">
+            <div className={`w-3.5 h-12 rounded-full shadow-2xl shrink-0 ${isRevision ? 'bg-purple-500 shadow-purple-500/40' : isPyq ? 'bg-orange-500 shadow-orange-500/40' : 'bg-indigo-500 shadow-indigo-500/40'}`}></div>
+            <h3 className="text-base lg:text-[32px] font-black text-white uppercase tracking-tight break-words min-w-0 leading-[1.1] drop-shadow-xl">
               {section.title}
             </h3>
           </div>
 
-          <div className={`bg-[#0f172a]/95 backdrop-blur-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-10 border border-white/5 hover:border-indigo-500/20 transition-all duration-700 shadow-2xl relative group/box overflow-hidden w-full break-words min-w-0`}>
-            <div className="space-y-5 relative z-10 w-full overflow-hidden min-w-0">
+          <div className={`bg-[#0f172a]/95 backdrop-blur-3xl rounded-[3rem] lg:rounded-[5rem] p-8 lg:p-20 border border-white/5 hover:border-indigo-500/20 transition-all duration-1000 shadow-[0_50px_100px_-30px_rgba(0,0,0,0.8)] relative overflow-hidden w-full break-words min-w-0 group`}>
+            <div className={`absolute -top-40 -right-40 w-96 h-96 blur-[150px] opacity-10 pointer-events-none transition-opacity duration-1000 group-hover:opacity-20 ${isPyq ? 'bg-orange-500' : 'bg-indigo-500'}`}></div>
+            
+            <div className="space-y-10 relative z-10 w-full overflow-hidden min-w-0">
               {section.lines.map((line, lIdx) => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('YEAR:') || trimmed.startsWith('MARKS:') || trimmed.startsWith('INSIGHT:')) {
-                  const label = trimmed.split(':')[0];
-                  const body = trimmed.split(':').slice(1).join(':').trim();
+                const upper = line.toUpperCase();
+                
+                // Tags: MARKS, YEAR
+                if (upper.startsWith('YEAR:') || upper.startsWith('MARKS:')) {
+                  const parts = line.split(':');
+                  const label = parts[0].trim();
+                  const body = parts.slice(1).join(':').trim();
                   return (
-                    <div key={lIdx} className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded bg-white/5 text-slate-400">
+                    <div key={lIdx} className="flex items-center gap-4 mb-3 flex-wrap">
+                      <span className="px-5 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 text-slate-300 border border-white/10">
                         {label}
                       </span>
-                      <p className="text-slate-400 text-[10px] font-bold">{body}</p>
+                      <p className="text-indigo-400 text-sm lg:text-[18px] font-bold tracking-tight">{body}</p>
                     </div>
                   );
                 }
-                if (trimmed.startsWith('SOLUTION:') || trimmed.startsWith('PROCEDURE:') || trimmed.startsWith('CALCULATION:') || trimmed.startsWith('PROOF:')) {
-                  const body = trimmed.split(':').slice(1).join(':').trim();
+
+                // Solution or Detailed Explanation
+                if (upper.startsWith('SOLUTION:') || upper.startsWith('EXPLANATION:') || upper.startsWith('PROOF:') || upper.startsWith('PROCEDURE:')) {
+                  const parts = line.split(':');
+                  const label = parts[0].trim();
+                  const body = parts.slice(1).join(':').trim();
                   return (
-                    <div key={lIdx} className="bg-white/[0.01] p-4 lg:p-8 rounded-[1.5rem] border border-white/5 mt-5 w-full relative overflow-hidden break-words">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                      <div className="text-slate-200 text-xs lg:text-[16px] font-medium leading-[1.7] whitespace-pre-line">
+                    <div key={lIdx} className="mt-12 pt-12 border-t border-white/5 w-full">
+                      <div className="flex items-center gap-4 mb-8">
+                        <span className={`w-2 h-8 rounded-full ${isPyq ? 'bg-orange-500' : 'bg-indigo-500'}`}></span>
+                        <span className="text-[12px] font-black text-slate-500 uppercase tracking-[0.4em]">{label}</span>
+                      </div>
+                      <div className="text-slate-100 text-[16px] lg:text-[22px] font-medium leading-[1.9] whitespace-pre-line tracking-tight opacity-95">
                         {body}
                       </div>
                     </div>
                   );
                 }
-                const isHeading = trimmed === trimmed.toUpperCase() && trimmed.length > 5;
+
+                // Special section for Hinglish Insights
+                if (upper.startsWith('INSIGHT:')) {
+                  const parts = line.split(':');
+                  const body = parts.slice(1).join(':').trim();
+                  return (
+                    <div key={lIdx} className="mt-10 p-8 bg-indigo-500/5 rounded-3xl border border-indigo-500/10 flex gap-5 items-start">
+                      <div className="text-2xl mt-1">💡</div>
+                      <div>
+                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2">AceBot Hint (Hinglish)</span>
+                        <p className="text-slate-300 text-[14px] lg:text-[18px] font-bold leading-relaxed">{body}</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Standard Text
+                const isSubHeader = line.startsWith('**') && line.endsWith('**');
                 return (
-                  <p key={lIdx} className={`text-slate-300 leading-relaxed tracking-tight break-words ${isHeading ? 'text-white font-black text-xs lg:text-[17px] mt-6 mb-3 border-b border-white/5 pb-2' : 'text-[12px] lg:text-[14px] font-medium opacity-90'}`}>
-                    {trimmed.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="text-white font-bold">{part}</strong> : part)}
-                  </p>
+                  <div key={lIdx} className={`text-slate-300 leading-relaxed tracking-tight break-words ${isSubHeader ? 'text-white font-black text-lg lg:text-[28px] mt-12 mb-8 border-b border-white/10 pb-6 block' : 'text-[16px] lg:text-[21px] font-medium opacity-90'}`}>
+                    {line.split('**').map((part, i) => i % 2 === 1 ? <strong key={i} className="text-white font-black underline decoration-indigo-500/40 underline-offset-8 decoration-2">{part}</strong> : part)}
+                  </div>
                 );
               })}
             </div>
@@ -268,7 +313,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
           </div>
         </div>
       ) : (
-        <div className="max-w-full lg:max-w-[1100px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 w-full min-w-0">
+        <div className="max-w-full lg:max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 w-full min-w-0">
           <div className="flex items-center justify-between mb-6">
             <button onClick={() => { setSelectedChapter(null); stopAudio(); }} className="flex items-center gap-2 text-slate-500 font-black text-[10px] bg-white/5 hover:bg-indigo-600 hover:text-white px-6 py-3 rounded-full border border-white/5 transition-all">← BACK</button>
             <div className="flex items-center gap-4">
@@ -280,49 +325,49 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
               )}
             </div>
           </div>
-          <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[2rem] lg:rounded-[3.5rem] border border-white/5 shadow-2xl overflow-hidden w-full min-w-0">
-            <div className="p-6 lg:p-16 bg-gradient-to-br from-indigo-950/20 via-slate-950 to-black relative">
-              <h2 className="text-xl lg:text-5xl font-black tracking-tighter text-white break-words min-w-0">{selectedChapter.title}</h2>
+          <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[3rem] lg:rounded-[4rem] border border-white/5 shadow-2xl overflow-hidden w-full min-w-0">
+            <div className="p-8 lg:p-20 bg-gradient-to-br from-indigo-950/20 via-slate-950 to-black relative">
+              <h2 className="text-2xl lg:text-6xl font-black tracking-tighter text-white break-words min-w-0 leading-tight">{selectedChapter.title}</h2>
             </div>
-            <div className="flex border-b border-white/5 bg-slate-950/70 items-center justify-between px-4 lg:px-12 overflow-x-auto no-scrollbar">
-              <div className="flex gap-4 lg:gap-10">
+            <div className="flex border-b border-white/5 bg-slate-950/70 items-center justify-between px-6 lg:px-16 overflow-x-auto no-scrollbar">
+              <div className="flex gap-6 lg:gap-14">
                 {['summary', 'notes', 'pyqs'].map((tab) => (
-                  <button key={tab} disabled={loading} onClick={() => setViewMode(tab as any)} className={`px-2 lg:px-8 py-5 lg:py-10 text-[9px] font-black uppercase tracking-[0.2em] transition-all border-b-4 ${viewMode === tab ? `border-indigo-500 text-white` : 'border-transparent text-slate-500'}`}>{tab}</button>
+                  <button key={tab} disabled={loading} onClick={() => setViewMode(tab as any)} className={`px-2 lg:px-10 py-6 lg:py-12 text-[10px] lg:text-[12px] font-black uppercase tracking-[0.3em] transition-all border-b-4 ${viewMode === tab ? `border-indigo-500 text-white` : 'border-transparent text-slate-500'}`}>{tab}</button>
                 ))}
               </div>
               {viewMode === 'notes' && content && !loading && !error && (
-                <button onClick={handleListen} disabled={isAudioLoading} className={`px-4 lg:px-8 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-xl`}>{isPlaying ? 'STOP' : 'HEAR LESSON'}</button>
+                <button onClick={handleListen} disabled={isAudioLoading} className={`px-5 lg:px-10 py-3 lg:py-5 rounded-2xl text-[9px] lg:text-[11px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-2xl transform active:scale-95 transition-all`}>{isPlaying ? 'STOP' : 'LISTEN'}</button>
               )}
             </div>
-            <div className="p-4 lg:p-14 min-h-[400px] w-full min-w-0">
+            <div className="p-6 lg:p-20 min-h-[500px] w-full min-w-0">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-6 text-center">
+                <div className="flex flex-col items-center justify-center py-20 lg:py-32 gap-8 text-center">
                   <div className="relative">
-                    <div className="w-16 h-16 border-4 border-indigo-500/20 rounded-full"></div>
-                    <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-20 h-20 border-4 border-indigo-500/10 rounded-full"></div>
+                    <div className="absolute inset-0 w-20 h-20 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase">{rotationReason ? `Switching Keys: ${rotationReason}` : "Processing Analysis..."}</p>
-                    <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">Using Active Key #{currentKeyIdx}</p>
+                  <div className="space-y-2">
+                    <p className="text-slate-500 text-[11px] font-black tracking-[0.4em] uppercase">{rotationReason ? `Switching Keys: ${rotationReason}` : "Generating Premium Insights..."}</p>
+                    <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Active Key Analysis #{currentKeyIdx}</p>
                   </div>
                 </div>
               ) : error ? (
-                <div className="flex flex-col items-center justify-center py-10 lg:py-20 gap-6 text-center animate-in fade-in max-w-2xl mx-auto">
-                  <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center text-3xl mb-4">⚠️</div>
-                  <h4 className="text-white text-lg font-black uppercase tracking-tighter">Connection Error</h4>
-                  <div className="text-slate-400 text-xs font-medium leading-relaxed bg-black/40 p-6 rounded-2xl border border-white/5 text-left w-full break-words">{error}</div>
-                  <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                    <button disabled={cooldown > 0} onClick={fetchData} className={`px-10 py-4 ${cooldown > 0 ? 'bg-slate-800 text-slate-500 grayscale' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95`}>{cooldown > 0 ? `Wait ${cooldown}s` : 'Retry with next key'}</button>
+                <div className="flex flex-col items-center justify-center py-20 gap-8 text-center animate-in fade-in max-w-3xl mx-auto">
+                  <div className="w-24 h-24 bg-red-500/10 rounded-3xl flex items-center justify-center text-4xl mb-4">⚠️</div>
+                  <h4 className="text-white text-xl lg:text-2xl font-black uppercase tracking-tighter">Connection Error</h4>
+                  <div className="text-slate-400 text-sm font-medium leading-relaxed bg-black/40 p-8 rounded-3xl border border-white/5 text-left w-full break-words shadow-2xl">{error}</div>
+                  <div className="flex flex-col sm:flex-row gap-6 mt-10">
+                    <button disabled={cooldown > 0} onClick={fetchData} className={`px-12 py-5 ${cooldown > 0 ? 'bg-slate-800 text-slate-500' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} rounded-full text-[11px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl active:scale-95`}>{cooldown > 0 ? `Wait ${cooldown}s` : 'Retry with next key'}</button>
                   </div>
                 </div>
               ) : viewMode === 'summary' ? (
-                <div className="space-y-8 animate-in fade-in duration-1000">
-                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-8">
-                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]"><span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Priority</span><p className="text-2xl lg:text-4xl font-black text-white">HIGH</p></div>
-                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]"><span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Analysis</span><p className="text-2xl lg:text-4xl font-black text-white">CORE</p></div>
-                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]"><span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Status</span><p className="text-2xl lg:text-4xl font-black text-white">READY</p></div>
+                <div className="space-y-12 animate-in fade-in duration-1000">
+                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-12">
+                     <div className="p-8 bg-slate-900/60 border border-white/5 rounded-[3rem] shadow-xl"><span className="text-[10px] font-black uppercase text-slate-500 mb-6 block tracking-widest">Priority</span><p className="text-3xl lg:text-5xl font-black text-white tracking-tighter">HIGH</p></div>
+                     <div className="p-8 bg-slate-900/60 border border-white/5 rounded-[3rem] shadow-xl"><span className="text-[10px] font-black uppercase text-slate-500 mb-6 block tracking-widest">Analysis</span><p className="text-3xl lg:text-5xl font-black text-white tracking-tighter">PREMIUM</p></div>
+                     <div className="p-8 bg-slate-900/60 border border-white/5 rounded-[3rem] shadow-xl"><span className="text-[10px] font-black uppercase text-slate-500 mb-6 block tracking-widest">Status</span><p className="text-3xl lg:text-5xl font-black text-white tracking-tighter">LOADED</p></div>
                    </div>
-                   <div className="p-8 lg:p-12 bg-indigo-600/5 border border-indigo-500/10 rounded-[2.5rem] relative overflow-hidden group"><p className="text-slate-300 font-bold leading-relaxed text-sm lg:text-[20px] relative z-10">Select <span className="text-indigo-400">Notes</span> for 15-year detailed breakdown or <span className="text-orange-400">PYQs</span> for 2026 Board questions.</p></div>
+                   <div className="p-10 lg:p-20 bg-indigo-600/5 border border-indigo-500/10 rounded-[4rem] relative overflow-hidden group shadow-2xl"><p className="text-slate-300 font-bold leading-relaxed text-base lg:text-[24px] relative z-10">Select <span className="text-indigo-400 underline decoration-indigo-400/30 underline-offset-8">Notes</span> for detailed concept boxes or <span className="text-orange-400 underline decoration-orange-400/30 underline-offset-8">PYQs</span> for 2026 Board questions.</p></div>
                 </div>
               ) : content ? (
                 <AestheticNotebook content={content} subject={subject.name} isPyq={viewMode === 'pyqs'} isRevision={isRevisionSelected} />
