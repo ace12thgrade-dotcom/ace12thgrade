@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Subject, Chapter } from '../types.ts';
-import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio, getActiveKeyCount, getCurrentKeyIndex } from '../services/geminiService.ts';
+import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio, getActiveKeyCount, getCurrentKeyIndex, getLastRotationReason } from '../services/geminiService.ts';
 import AdBanner from './AdBanner.tsx';
 
 interface SubjectDashboardProps {
@@ -73,7 +73,6 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
             <div className="space-y-5 relative z-10 w-full overflow-hidden min-w-0">
               {section.lines.map((line, lIdx) => {
                 const trimmed = line.trim();
-                
                 if (trimmed.startsWith('YEAR:') || trimmed.startsWith('MARKS:') || trimmed.startsWith('INSIGHT:')) {
                   const label = trimmed.split(':')[0];
                   const body = trimmed.split(':').slice(1).join(':').trim();
@@ -86,7 +85,6 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
                     </div>
                   );
                 }
-
                 if (trimmed.startsWith('SOLUTION:') || trimmed.startsWith('PROCEDURE:') || trimmed.startsWith('CALCULATION:') || trimmed.startsWith('PROOF:')) {
                   const body = trimmed.split(':').slice(1).join(':').trim();
                   return (
@@ -98,7 +96,6 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
                     </div>
                   );
                 }
-
                 const isHeading = trimmed === trimmed.toUpperCase() && trimmed.length > 5;
                 return (
                   <p key={lIdx} className={`text-slate-300 leading-relaxed tracking-tight break-words ${isHeading ? 'text-white font-black text-xs lg:text-[17px] mt-6 mb-3 border-b border-white/5 pb-2' : 'text-[12px] lg:text-[14px] font-medium opacity-90'}`}>
@@ -126,14 +123,13 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
   
   const keyCount = getActiveKeyCount();
   const currentKeyIdx = getCurrentKeyIndex();
+  const rotationReason = getLastRotationReason();
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   useEffect(() => {
     let timer: number;
-    if (cooldown > 0) {
-      timer = window.setInterval(() => setCooldown(c => c - 1), 1000);
-    }
+    if (cooldown > 0) timer = window.setInterval(() => setCooldown(c => c - 1), 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
 
@@ -149,7 +145,6 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
     if (!selectedChapter || viewMode === 'summary') {
       setContent(null);
       setLoading(false);
-      setIsCached(false);
       return;
     }
 
@@ -181,24 +176,16 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
       }
     } catch (e: any) {
       console.error("Gemini API Error:", e);
-      let errorMessage = "Request failed.";
-      
-      if (e.message === "API_KEY_MISSING") {
-        errorMessage = "API Keys Missing: Please add them in Netlify environment variables as GEMINI_API_KEY.";
-      } else if (e.message?.includes("429") || e.toString().includes("429")) {
-        errorMessage = "All 10 Keys Exhausted: Traffic is extremely high. Please wait 60 seconds.";
-        setCooldown(60); 
-      } else if (e.message?.includes("400") || e.toString().includes("400")) {
-        errorMessage = "Invalid Key Detected: One or more of your API keys are incorrect or expired.";
-      } else {
-        errorMessage = e.message || "Network error. Please try again.";
+      let errorMessage = e.message || "Network error. Please try again.";
+      if (e.message?.includes("429")) {
+        errorMessage = "All keys are hitting rate limits. High traffic! Please wait 30 seconds.";
+        setCooldown(30);
       }
-      
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [selectedChapter, viewMode, subject.id, subject.name, keyCount]);
+  }, [selectedChapter, viewMode, subject.id, subject.name]);
 
   useEffect(() => {
     fetchData();
@@ -252,98 +239,61 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
               </div>
               <div>
                 <h1 className="text-2xl lg:text-6xl font-black text-white tracking-tighter mb-2">{subject.name}</h1>
-                <p className="text-slate-500 text-[10px] lg:text-lg font-bold tracking-tight">
-                  Analyzing {subject.chapters.length} Premium Chapters.
-                </p>
+                <p className="text-slate-500 text-[10px] lg:text-lg font-bold tracking-tight">Analyzing {subject.chapters.length} Premium Chapters.</p>
               </div>
             </div>
             {keyCount > 0 && (
-              <div className="bg-indigo-600/10 border border-indigo-500/20 px-6 py-3 rounded-2xl flex items-center gap-4 group hover:bg-indigo-600/20 transition-all">
+              <div className="bg-indigo-600/10 border border-indigo-500/20 px-6 py-3 rounded-2xl flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-3 h-3 bg-indigo-500 rounded-full animate-ping"></div>
-                  <div className="absolute inset-0 w-3 h-3 bg-indigo-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
+                  <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full"></div>
                 </div>
                 <div>
-                   <span className="text-[10px] font-black text-white uppercase tracking-widest block">Turbo Load Balancer</span>
-                   <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.2em]">{keyCount} Keys Connected</span>
+                   <span className="text-[10px] font-black text-white uppercase tracking-widest block">Active Key #{currentKeyIdx}</span>
+                   <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.2em]">{keyCount} Keys Balanced</span>
                 </div>
               </div>
             )}
           </header>
-
           <div className="flex flex-col lg:flex-row gap-8 pb-10 w-full min-w-0">
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 w-full min-w-0">
               {filteredChapters.map((chapter) => (
-                <div 
-                  key={chapter.id} 
-                  onClick={() => { setSelectedChapter(chapter); setViewMode('summary'); }} 
-                  className="premium-card p-5 lg:p-8 rounded-[2rem] cursor-pointer group w-full"
-                >
+                <div key={chapter.id} onClick={() => { setSelectedChapter(chapter); setViewMode('summary'); }} className="premium-card p-5 lg:p-8 rounded-[2rem] cursor-pointer group w-full">
                   <h3 className="font-black text-base lg:text-2xl text-white mb-2 tracking-tight group-hover:text-indigo-400">{chapter.title}</h3>
                   <p className="text-slate-500 text-[9px] lg:text-sm font-bold line-clamp-2">{chapter.description}</p>
                 </div>
               ))}
             </div>
-            <div className="hidden xl:block w-[160px] shrink-0 sticky top-10 h-fit">
-              <AdBanner />
-            </div>
+            <div className="hidden xl:block w-[160px] shrink-0 sticky top-10 h-fit"><AdBanner /></div>
           </div>
         </div>
       ) : (
         <div className="max-w-full lg:max-w-[1100px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 w-full min-w-0">
           <div className="flex items-center justify-between mb-6">
-            <button 
-              onClick={() => { setSelectedChapter(null); stopAudio(); }} 
-              className="flex items-center gap-2 text-slate-500 font-black text-[10px] bg-white/5 hover:bg-indigo-600 hover:text-white px-6 py-3 rounded-full border border-white/5 transition-all"
-            >
-              ← BACK TO SUBJECT
-            </button>
+            <button onClick={() => { setSelectedChapter(null); stopAudio(); }} className="flex items-center gap-2 text-slate-500 font-black text-[10px] bg-white/5 hover:bg-indigo-600 hover:text-white px-6 py-3 rounded-full border border-white/5 transition-all">← BACK</button>
             <div className="flex items-center gap-4">
-               {keyCount > 1 && (
-                  <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-500/10 bg-indigo-500/5">
-                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Active Key: #{currentKeyIdx}</span>
-                  </div>
-               )}
                {isCached && !error && (
                 <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                  <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Cached for Offline</span>
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Offline Cache Active</span>
                 </div>
               )}
             </div>
           </div>
-          
           <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[2rem] lg:rounded-[3.5rem] border border-white/5 shadow-2xl overflow-hidden w-full min-w-0">
             <div className="p-6 lg:p-16 bg-gradient-to-br from-indigo-950/20 via-slate-950 to-black relative">
               <h2 className="text-xl lg:text-5xl font-black tracking-tighter text-white break-words min-w-0">{selectedChapter.title}</h2>
             </div>
-
             <div className="flex border-b border-white/5 bg-slate-950/70 items-center justify-between px-4 lg:px-12 overflow-x-auto no-scrollbar">
               <div className="flex gap-4 lg:gap-10">
                 {['summary', 'notes', 'pyqs'].map((tab) => (
-                  <button 
-                    key={tab} 
-                    disabled={loading}
-                    onClick={() => setViewMode(tab as any)} 
-                    className={`px-2 lg:px-8 py-5 lg:py-10 text-[9px] font-black uppercase tracking-[0.2em] transition-all border-b-4 ${
-                      viewMode === tab ? `border-indigo-500 text-white` : 'border-transparent text-slate-500'
-                    }`}
-                  >
-                    {tab}
-                  </button>
+                  <button key={tab} disabled={loading} onClick={() => setViewMode(tab as any)} className={`px-2 lg:px-8 py-5 lg:py-10 text-[9px] font-black uppercase tracking-[0.2em] transition-all border-b-4 ${viewMode === tab ? `border-indigo-500 text-white` : 'border-transparent text-slate-500'}`}>{tab}</button>
                 ))}
               </div>
               {viewMode === 'notes' && content && !loading && !error && (
-                <button 
-                  onClick={handleListen} 
-                  disabled={isAudioLoading} 
-                  className={`px-4 lg:px-8 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-xl`}
-                >
-                  {isPlaying ? 'STOP AUDIO' : 'HEAR LESSON'}
-                </button>
+                <button onClick={handleListen} disabled={isAudioLoading} className={`px-4 lg:px-8 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-xl`}>{isPlaying ? 'STOP' : 'HEAR LESSON'}</button>
               )}
             </div>
-
             <div className="p-4 lg:p-14 min-h-[400px] w-full min-w-0">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-6 text-center">
@@ -352,55 +302,27 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                     <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-slate-500 text-[10px] font-black tracking-[0.3em]">RETRIVING DATA...</p>
-                    {keyCount > 1 && <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">Switching between {keyCount} keys for speed</p>}
+                    <p className="text-slate-500 text-[10px] font-black tracking-[0.3em] uppercase">{rotationReason ? `Switching Keys: ${rotationReason}` : "Processing Analysis..."}</p>
+                    <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">Using Active Key #{currentKeyIdx}</p>
                   </div>
                 </div>
               ) : error ? (
                 <div className="flex flex-col items-center justify-center py-10 lg:py-20 gap-6 text-center animate-in fade-in max-w-2xl mx-auto">
                   <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center text-3xl mb-4">⚠️</div>
-                  <h4 className="text-white text-lg font-black uppercase tracking-tighter">API Error Detected</h4>
-                  <div className="text-slate-400 text-xs font-medium leading-relaxed bg-black/40 p-6 rounded-2xl border border-white/5 text-left w-full break-words">
-                    {error}
-                  </div>
+                  <h4 className="text-white text-lg font-black uppercase tracking-tighter">Connection Error</h4>
+                  <div className="text-slate-400 text-xs font-medium leading-relaxed bg-black/40 p-6 rounded-2xl border border-white/5 text-left w-full break-words">{error}</div>
                   <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                    <button 
-                      disabled={cooldown > 0}
-                      onClick={fetchData} 
-                      className={`px-10 py-4 ${cooldown > 0 ? 'bg-slate-800 text-slate-500 grayscale' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95`}
-                    >
-                      {cooldown > 0 ? `Wait ${cooldown}s` : 'Retry Connection'}
-                    </button>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="px-10 py-4 bg-white/5 hover:bg-white/10 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/10"
-                    >
-                      Refresh App
-                    </button>
+                    <button disabled={cooldown > 0} onClick={fetchData} className={`px-10 py-4 ${cooldown > 0 ? 'bg-slate-800 text-slate-500 grayscale' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95`}>{cooldown > 0 ? `Wait ${cooldown}s` : 'Retry with next key'}</button>
                   </div>
                 </div>
               ) : viewMode === 'summary' ? (
                 <div className="space-y-8 animate-in fade-in duration-1000">
                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-8">
-                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
-                        <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Priority Index</span>
-                        <p className="text-2xl lg:text-4xl font-black text-white">HIGH</p>
-                     </div>
-                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
-                        <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">15yr Frequency</span>
-                        <p className="text-2xl lg:text-4xl font-black text-white">92%</p>
-                     </div>
-                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
-                        <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Complexity</span>
-                        <p className="text-2xl lg:text-4xl font-black text-white">CORE</p>
-                     </div>
+                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]"><span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Priority</span><p className="text-2xl lg:text-4xl font-black text-white">HIGH</p></div>
+                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]"><span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Analysis</span><p className="text-2xl lg:text-4xl font-black text-white">CORE</p></div>
+                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]"><span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Status</span><p className="text-2xl lg:text-4xl font-black text-white">READY</p></div>
                    </div>
-                   <div className="p-8 lg:p-12 bg-indigo-600/5 border border-indigo-500/10 rounded-[2.5rem] relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-[50px]"></div>
-                      <p className="text-slate-300 font-bold leading-relaxed text-sm lg:text-[20px] relative z-10">
-                        Select <span className="text-indigo-400">Notes</span> for full explanation or <span className="text-orange-400">PYQs</span> to see analyzed 2026 board questions.
-                      </p>
-                   </div>
+                   <div className="p-8 lg:p-12 bg-indigo-600/5 border border-indigo-500/10 rounded-[2.5rem] relative overflow-hidden group"><p className="text-slate-300 font-bold leading-relaxed text-sm lg:text-[20px] relative z-10">Select <span className="text-indigo-400">Notes</span> for 15-year detailed breakdown or <span className="text-orange-400">PYQs</span> for 2026 Board questions.</p></div>
                 </div>
               ) : content ? (
                 <AestheticNotebook content={content} subject={subject.name} isPyq={viewMode === 'pyqs'} isRevision={isRevisionSelected} />
