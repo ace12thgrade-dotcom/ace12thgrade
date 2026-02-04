@@ -1,7 +1,7 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Subject, Chapter } from '../types.ts';
-import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio } from '../services/geminiService.ts';
+import { generateDetailedNotes, generatePremiumPYQs, generateChapterAudio, getActiveKeyCount, getCurrentKeyIndex } from '../services/geminiService.ts';
 import AdBanner from './AdBanner.tsx';
 
 interface SubjectDashboardProps {
@@ -52,7 +52,7 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
     } else if (currentSection) {
       currentSection.lines.push(line);
     } else {
-      if (!currentSection) currentSection = { title: isRevision ? "Overview" : "Exam Overview", lines: [line] };
+      if (!currentSection) currentSection = { title: isRevision ? "Quick Revision" : "Chapter Concept", lines: [line] };
       else currentSection.lines.push(line);
     }
   });
@@ -74,18 +74,6 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
               {section.lines.map((line, lIdx) => {
                 const trimmed = line.trim();
                 
-                if (trimmed.startsWith('DIAGRAM_GUIDE:')) {
-                  const body = trimmed.replace('DIAGRAM_GUIDE:', '').trim();
-                  return (
-                    <div key={lIdx} className="bg-emerald-500/5 p-4 lg:p-7 rounded-[1.2rem] border border-emerald-500/10 mt-5 w-full relative overflow-hidden break-words">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                      <p className="text-emerald-50/80 text-[11px] lg:text-[15px] font-medium leading-relaxed italic">
-                        {body}
-                      </p>
-                    </div>
-                  );
-                }
-
                 if (trimmed.startsWith('YEAR:') || trimmed.startsWith('MARKS:') || trimmed.startsWith('INSIGHT:')) {
                   const label = trimmed.split(':')[0];
                   const body = trimmed.split(':').slice(1).join(':').trim();
@@ -134,9 +122,20 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCached, setIsCached] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   
+  const keyCount = getActiveKeyCount();
+  const currentKeyIdx = getCurrentKeyIndex();
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  useEffect(() => {
+    let timer: number;
+    if (cooldown > 0) {
+      timer = window.setInterval(() => setCooldown(c => c - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   useEffect(() => {
     setContent(null);
@@ -146,7 +145,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
     setError(null);
   }, [subject]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!selectedChapter || viewMode === 'summary') {
       setContent(null);
       setLoading(false);
@@ -181,32 +180,29 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
         setIsCached(true);
       }
     } catch (e: any) {
-      console.error("Gemini API Error Detail:", e);
-      
-      // Determine the specific error to display
-      let errorMessage = "Failed to fetch content. ";
+      console.error("Gemini API Error:", e);
+      let errorMessage = "Request failed.";
       
       if (e.message === "API_KEY_MISSING") {
-        errorMessage = "API Key Not Found! Go to Netlify -> Site Settings -> Environment Variables. Add 'API_KEY'. Then REDEPLOY your site.";
-      } else if (e.message?.includes("401") || e.toString().includes("401")) {
-        errorMessage = "Invalid API Key (401). Please verify your key in Google AI Studio.";
+        errorMessage = "API Keys Missing: Please add them in Netlify environment variables as GEMINI_API_KEY.";
       } else if (e.message?.includes("429") || e.toString().includes("429")) {
-        errorMessage = "Rate Limit Reached (429). Please wait a minute or use a different API key.";
-      } else if (e.message?.includes("User location")) {
-        errorMessage = "Region Restricted. This model might not be available in your current country.";
+        errorMessage = "All 10 Keys Exhausted: Traffic is extremely high. Please wait 60 seconds.";
+        setCooldown(60); 
+      } else if (e.message?.includes("400") || e.toString().includes("400")) {
+        errorMessage = "Invalid Key Detected: One or more of your API keys are incorrect or expired.";
       } else {
-        errorMessage += (e.message || "Please check your internet connection.");
+        errorMessage = e.message || "Network error. Please try again.";
       }
       
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedChapter, viewMode, subject.id, subject.name, keyCount]);
 
   useEffect(() => {
     fetchData();
-  }, [viewMode, selectedChapter, subject.id, subject.name]);
+  }, [fetchData]);
 
   const stopAudio = () => {
     if (audioSourceRef.current) {
@@ -249,7 +245,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
     <div className="flex-1 w-full px-2 lg:px-10 py-6 lg:py-10 max-w-full overflow-x-hidden min-w-0">
       {!selectedChapter ? (
         <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000 w-full min-w-0">
-          <header className="mb-8 lg:mb-16 text-center lg:text-left px-2">
+          <header className="mb-8 lg:mb-16 text-center lg:text-left px-2 flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
               <div className="w-16 h-16 lg:w-24 lg:h-24 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-3xl lg:text-6xl shadow-2xl rotate-3">
                 {subject.icon}
@@ -257,10 +253,22 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
               <div>
                 <h1 className="text-2xl lg:text-6xl font-black text-white tracking-tighter mb-2">{subject.name}</h1>
                 <p className="text-slate-500 text-[10px] lg:text-lg font-bold tracking-tight">
-                  4250+ Questions Analyzed.
+                  Analyzing {subject.chapters.length} Premium Chapters.
                 </p>
               </div>
             </div>
+            {keyCount > 0 && (
+              <div className="bg-indigo-600/10 border border-indigo-500/20 px-6 py-3 rounded-2xl flex items-center gap-4 group hover:bg-indigo-600/20 transition-all">
+                <div className="relative">
+                  <div className="w-3 h-3 bg-indigo-500 rounded-full animate-ping"></div>
+                  <div className="absolute inset-0 w-3 h-3 bg-indigo-400 rounded-full"></div>
+                </div>
+                <div>
+                   <span className="text-[10px] font-black text-white uppercase tracking-widest block">Turbo Load Balancer</span>
+                   <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.2em]">{keyCount} Keys Connected</span>
+                </div>
+              </div>
+            )}
           </header>
 
           <div className="flex flex-col lg:flex-row gap-8 pb-10 w-full min-w-0">
@@ -288,14 +296,21 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
               onClick={() => { setSelectedChapter(null); stopAudio(); }} 
               className="flex items-center gap-2 text-slate-500 font-black text-[10px] bg-white/5 hover:bg-indigo-600 hover:text-white px-6 py-3 rounded-full border border-white/5 transition-all"
             >
-              ← BACK
+              ← BACK TO SUBJECT
             </button>
-            {isCached && !error && (
-              <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Saved to Device</span>
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+               {keyCount > 1 && (
+                  <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-500/10 bg-indigo-500/5">
+                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Active Key: #{currentKeyIdx}</span>
+                  </div>
+               )}
+               {isCached && !error && (
+                <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                  <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Cached for Offline</span>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="bg-slate-950/40 backdrop-blur-3xl rounded-[2rem] lg:rounded-[3.5rem] border border-white/5 shadow-2xl overflow-hidden w-full min-w-0">
@@ -322,32 +337,39 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                 <button 
                   onClick={handleListen} 
                   disabled={isAudioLoading} 
-                  className={`px-4 lg:px-8 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white`}
+                  className={`px-4 lg:px-8 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-xl`}
                 >
-                  {isPlaying ? 'STOP' : 'LISTEN'}
+                  {isPlaying ? 'STOP AUDIO' : 'HEAR LESSON'}
                 </button>
               )}
             </div>
 
             <div className="p-4 lg:p-14 min-h-[400px] w-full min-w-0">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-6">
-                  <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-slate-500 text-[10px] font-black tracking-[0.3em]">FETCHING CONTENT...</p>
+                <div className="flex flex-col items-center justify-center py-20 gap-6 text-center">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-indigo-500/20 rounded-full"></div>
+                    <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-slate-500 text-[10px] font-black tracking-[0.3em]">RETRIVING DATA...</p>
+                    {keyCount > 1 && <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">Switching between {keyCount} keys for speed</p>}
+                  </div>
                 </div>
               ) : error ? (
                 <div className="flex flex-col items-center justify-center py-10 lg:py-20 gap-6 text-center animate-in fade-in max-w-2xl mx-auto">
                   <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center text-3xl mb-4">⚠️</div>
                   <h4 className="text-white text-lg font-black uppercase tracking-tighter">API Error Detected</h4>
-                  <p className="text-slate-400 text-sm font-medium leading-relaxed bg-black/40 p-6 rounded-2xl border border-white/5">
+                  <div className="text-slate-400 text-xs font-medium leading-relaxed bg-black/40 p-6 rounded-2xl border border-white/5 text-left w-full break-words">
                     {error}
-                  </p>
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-4 mt-6">
                     <button 
+                      disabled={cooldown > 0}
                       onClick={fetchData} 
-                      className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95"
+                      className={`px-10 py-4 ${cooldown > 0 ? 'bg-slate-800 text-slate-500 grayscale' : 'bg-indigo-600 hover:bg-indigo-500 text-white'} rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95`}
                     >
-                      Retry Connection
+                      {cooldown > 0 ? `Wait ${cooldown}s` : 'Retry Connection'}
                     </button>
                     <button 
                       onClick={() => window.location.reload()} 
@@ -360,16 +382,23 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
               ) : viewMode === 'summary' ? (
                 <div className="space-y-8 animate-in fade-in duration-1000">
                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-8">
-                     {['Priority', 'History', 'Potential'].map((label, i) => (
-                       <div key={i} className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
-                          <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">{label}</span>
-                          <p className="text-2xl lg:text-4xl font-black text-white">MAX</p>
-                       </div>
-                     ))}
+                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
+                        <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Priority Index</span>
+                        <p className="text-2xl lg:text-4xl font-black text-white">HIGH</p>
+                     </div>
+                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
+                        <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">15yr Frequency</span>
+                        <p className="text-2xl lg:text-4xl font-black text-white">92%</p>
+                     </div>
+                     <div className="p-6 bg-slate-900/60 border border-white/5 rounded-[2rem]">
+                        <span className="text-[9px] font-black uppercase text-slate-500 mb-4 block">Complexity</span>
+                        <p className="text-2xl lg:text-4xl font-black text-white">CORE</p>
+                     </div>
                    </div>
-                   <div className="p-6 lg:p-12 bg-indigo-600/5 border border-indigo-500/10 rounded-[2.5rem]">
-                      <p className="text-slate-400 font-bold leading-relaxed text-sm lg:text-[20px]">
-                        Focus on the Premium MIQs. All notes are automatically downloaded once opened.
+                   <div className="p-8 lg:p-12 bg-indigo-600/5 border border-indigo-500/10 rounded-[2.5rem] relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-[50px]"></div>
+                      <p className="text-slate-300 font-bold leading-relaxed text-sm lg:text-[20px] relative z-10">
+                        Select <span className="text-indigo-400">Notes</span> for full explanation or <span className="text-orange-400">PYQs</span> to see analyzed 2026 board questions.
                       </p>
                    </div>
                 </div>
