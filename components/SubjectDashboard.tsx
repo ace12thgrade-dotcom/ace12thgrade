@@ -166,10 +166,10 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
     }
 
     setLoading(true);
-    setContent(null);
     setError(null);
     setIsCached(false);
     stopAudio();
+    
     try {
       const result = viewMode === 'notes' 
         ? await generateDetailedNotes(subject.name, selectedChapter.title)
@@ -181,12 +181,24 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
         setIsCached(true);
       }
     } catch (e: any) {
-      console.error("API Error:", e);
+      console.error("Gemini API Error Detail:", e);
+      
+      // Determine the specific error to display
+      let errorMessage = "Failed to fetch content. ";
+      
       if (e.message === "API_KEY_MISSING") {
-        setError("API Key Missing: Please add 'API_KEY' to Netlify environment variables and redeploy.");
+        errorMessage = "API Key Not Found! Go to Netlify -> Site Settings -> Environment Variables. Add 'API_KEY'. Then REDEPLOY your site.";
+      } else if (e.message?.includes("401") || e.toString().includes("401")) {
+        errorMessage = "Invalid API Key (401). Please verify your key in Google AI Studio.";
+      } else if (e.message?.includes("429") || e.toString().includes("429")) {
+        errorMessage = "Rate Limit Reached (429). Please wait a minute or use a different API key.";
+      } else if (e.message?.includes("User location")) {
+        errorMessage = "Region Restricted. This model might not be available in your current country.";
       } else {
-        setError("Failed to fetch content. Please check your internet connection or API Key limits.");
+        errorMessage += (e.message || "Please check your internet connection.");
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -324,15 +336,26 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                   <p className="text-slate-500 text-[10px] font-black tracking-[0.3em]">FETCHING CONTENT...</p>
                 </div>
               ) : error ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-6 text-center animate-in fade-in">
-                  <div className="text-4xl">⚠️</div>
-                  <p className="text-white text-xs lg:text-base font-black uppercase tracking-widest">{error}</p>
-                  <button 
-                    onClick={fetchData} 
-                    className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Retry Connection
-                  </button>
+                <div className="flex flex-col items-center justify-center py-10 lg:py-20 gap-6 text-center animate-in fade-in max-w-2xl mx-auto">
+                  <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center text-3xl mb-4">⚠️</div>
+                  <h4 className="text-white text-lg font-black uppercase tracking-tighter">API Error Detected</h4>
+                  <p className="text-slate-400 text-sm font-medium leading-relaxed bg-black/40 p-6 rounded-2xl border border-white/5">
+                    {error}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                    <button 
+                      onClick={fetchData} 
+                      className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95"
+                    >
+                      Retry Connection
+                    </button>
+                    <button 
+                      onClick={() => window.location.reload()} 
+                      className="px-10 py-4 bg-white/5 hover:bg-white/10 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/10"
+                    >
+                      Refresh App
+                    </button>
+                  </div>
                 </div>
               ) : viewMode === 'summary' ? (
                 <div className="space-y-8 animate-in fade-in duration-1000">
