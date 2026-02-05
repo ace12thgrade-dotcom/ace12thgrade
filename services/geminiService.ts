@@ -111,13 +111,20 @@ ${SYMBOL_INSTRUCTION}`;
 export const generateChapterAudio = async (notes: string, subject: string) => {
   return withRetry(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `Summary of ${subject} (15yr Analysis): ${notes.substring(0, 800)}`;
+    // Explicitly ask the model to speak the summary
+    const cleanNotes = notes.replace(/TOPIC:|QUESTION:|INSIGHT:|SOLUTION:|\*\*|#/gi, '').substring(0, 1000);
+    const prompt = `Please read this summary for ${subject} in a clear, educational tone: ${cleanNotes}`;
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: prompt }] }],
       config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+        responseModalities: ['AUDIO'],
+        speechConfig: { 
+          voiceConfig: { 
+            prebuiltVoiceConfig: { voiceName: 'Kore' } 
+          } 
+        },
       },
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;

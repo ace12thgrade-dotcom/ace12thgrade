@@ -20,13 +20,19 @@ function decodeBase64(base64: string) {
       bytes[i] = binaryString.charCodeAt(i);
     }
     return bytes;
-  } catch (e) { return new Uint8Array(0); }
+  } catch (e) { 
+    console.error("Base64 decoding failed", e);
+    return new Uint8Array(0); 
+  }
 }
 
 async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
+  // Ensure we handle potential odd byte lengths for 16-bit PCM
+  const bufferLength = Math.floor(data.byteLength / 2);
+  const dataInt16 = new Int16Array(data.buffer, 0, bufferLength);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+  
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
     for (let i = 0; i < frameCount; i++) {
@@ -246,9 +252,19 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
     try {
       const audioData = await generateChapterAudio(content, subject.name);
       if (audioData) {
-        if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        }
         const ctx = audioContextRef.current;
+        
+        // Browsers require AudioContext to be resumed via user interaction
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+
         const bytes = decodeBase64(audioData);
+        if (bytes.length === 0) throw new Error("Audio data empty");
+        
         const buffer = await decodeAudioData(bytes, ctx, 24000, 1);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
@@ -258,8 +274,12 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
         source.start();
         setIsPlaying(true);
       }
-    } catch (e) {}
-    setIsAudioLoading(false);
+    } catch (e) {
+      console.error("Audio playback error:", e);
+      alert("Audio Reader failed. Please try again in a moment.");
+    } finally {
+      setIsAudioLoading(false);
+    }
   };
 
   const filteredChapters = subject.chapters.filter(c => 
@@ -324,7 +344,9 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
                 ))}
               </div>
               {viewMode === 'notes' && content && !loading && !error && (
-                <button onClick={handleListen} disabled={isAudioLoading} className={`px-4 lg:px-6 py-2 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-xl`}>{isPlaying ? 'STOP' : 'LISTEN'}</button>
+                <button onClick={handleListen} disabled={isAudioLoading} className={`px-4 lg:px-6 py-2 rounded-xl text-[8px] lg:text-[10px] font-black uppercase tracking-widest ${isPlaying ? 'bg-red-600' : 'bg-indigo-600'} text-white shadow-xl flex items-center gap-2`}>
+                  {isAudioLoading ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (isPlaying ? 'STOP' : 'LISTEN')}
+                </button>
               )}
             </div>
             <div className="p-4 lg:p-10 min-h-[400px] w-full min-w-0">
