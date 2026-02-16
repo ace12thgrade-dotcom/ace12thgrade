@@ -17,6 +17,28 @@ const getAPIKeys = (): string[] => {
 let currentKeyIndex = 0;
 let lastRotationReason = "";
 
+// Offline Caching Helpers
+const CACHE_PREFIX = "ace12_v1_";
+const getCachedData = (key: string): string | null => {
+  try {
+    return localStorage.getItem(CACHE_PREFIX + key);
+  } catch (e) {
+    return null;
+  }
+};
+
+const setCachedData = (key: string, value: string) => {
+  try {
+    localStorage.setItem(CACHE_PREFIX + key, value);
+  } catch (e) {
+    // If quota exceeded, clear old caches
+    if (e.name === 'QuotaExceededError') {
+      localStorage.clear();
+      localStorage.setItem(CACHE_PREFIX + key, value);
+    }
+  }
+};
+
 async function withRetry<T>(fn: (apiKey: string) => Promise<T>, retries = 20): Promise<T> {
   const keys = getAPIKeys();
   
@@ -63,7 +85,11 @@ async function withRetry<T>(fn: (apiKey: string) => Promise<T>, retries = 20): P
 const SYMBOL_INSTRUCTION = "CRITICAL: Use actual scientific/mathematical symbols (like ε, λ, σ, Δ, π, Ω, ∞, √, ∫, ≈, ±). DO NOT use LaTeX symbols like '$' or '\\'. DO NOT use text borders like '||', '===', or '---'.";
 
 export const generateDetailedNotes = async (subject: string, chapter: string) => {
-  return withRetry(async (apiKey) => {
+  const cacheKey = `notes_${subject}_${chapter}`.replace(/\s+/g, '_');
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `Act as a Class 12 Subject Expert. 
@@ -83,10 +109,17 @@ ${SYMBOL_INSTRUCTION}`;
     });
     return response.text;
   });
+
+  if (result) setCachedData(cacheKey, result);
+  return result;
 };
 
 export const generatePremiumPYQs = async (subject: string, chapter: string) => {
-  return withRetry(async (apiKey) => {
+  const cacheKey = `pyqs_${subject}_${chapter}`.replace(/\s+/g, '_');
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
     const isRevision = chapter.toUpperCase().includes("FULL SUBJECT REVISION");
     const prompt = `Act as Senior CBSE Examiner. Analyze 4250 questions from last 15 years. 
@@ -106,12 +139,14 @@ ${SYMBOL_INSTRUCTION}`;
     });
     return response.text;
   });
+
+  if (result) setCachedData(cacheKey, result);
+  return result;
 };
 
 export const generateChapterAudio = async (notes: string, subject: string) => {
   return withRetry(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
-    // Explicitly ask the model to speak the summary
     const cleanNotes = notes.replace(/TOPIC:|QUESTION:|INSIGHT:|SOLUTION:|\*\*|#/gi, '').substring(0, 1000);
     const prompt = `Please read this summary for ${subject} in a clear, educational tone: ${cleanNotes}`;
     
@@ -119,7 +154,7 @@ export const generateChapterAudio = async (notes: string, subject: string) => {
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: prompt }] }],
       config: {
-        responseModalities: ['AUDIO'],
+        responseModalities: [Modality.AUDIO],
         speechConfig: { 
           voiceConfig: { 
             prebuiltVoiceConfig: { voiceName: 'Kore' } 

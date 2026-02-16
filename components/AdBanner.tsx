@@ -1,50 +1,80 @@
-
 import React, { useEffect, useRef } from 'react';
 
 const AdBanner: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scriptExecutedRef = useRef(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // Prevent double injection in React Strict Mode
+    if (!containerRef.current || scriptExecutedRef.current) return;
 
-    // Small delay to ensure React has finalized the DOM structure before script injection
-    const timer = setTimeout(() => {
-      if (!containerRef.current) return;
-      
-      // Clear any stale content from previous mounts
-      containerRef.current.innerHTML = '';
+    const adContainer = containerRef.current;
+    
+    const loadAd = () => {
+      try {
+        // Clear previous content to avoid stacking
+        adContainer.innerHTML = '';
 
-      // Adsterra scripts look for atOptions in the global window scope
-      (window as any).atOptions = {
-        'key' : '22f76c9da64add65e5b5d83a9e570782',
-        'format' : 'iframe',
-        'height' : 300,
-        'width' : 160,
-        'params' : {}
-      };
+        // Adsterra specific options
+        const adKey = '22f76c9da64add65e5b5d83a9e570782';
+        const atOptions = {
+          'key': adKey,
+          'format': 'iframe',
+          'height': 300,
+          'width': 160,
+          'params': {}
+        };
 
-      // Create and inject the invoke.js script
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = 'https://www.highperformanceformat.com/22f76c9da64add65e5b5d83a9e570782/invoke.js';
-      script.async = true;
+        // Set global options required by invoke.js
+        (window as any).atOptions = atOptions;
 
-      containerRef.current.appendChild(script);
-    }, 150);
+        // Create the script element
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        // Using https: explicitly for better security/loading
+        script.src = `https://www.highperformanceformat.com/${adKey}/invoke.js`;
+        script.async = true;
 
-    return () => clearTimeout(timer);
+        // Append to container
+        adContainer.appendChild(script);
+        scriptExecutedRef.current = true;
+        
+        console.debug('Adsterra banner script injected');
+      } catch (e) {
+        console.error('Adsterra banner initialization failed:', e);
+      }
+    };
+
+    // Delay slightly to ensure layout is stable
+    const timeoutId = setTimeout(loadAd, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      // Optional: don't clear innerHTML on unmount if you want the ad to stay visible during fast navigation
+      // but usually for ads, clearing is safer to prevent script conflicts.
+      if (adContainer) adContainer.innerHTML = '';
+      scriptExecutedRef.current = false;
+    };
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <span className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em] select-none">Sponsored</span>
+    <div className="flex flex-col items-center gap-4 py-4">
+      <div className="flex items-center gap-2 opacity-50">
+        <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+        <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] select-none">Sponsored Content</span>
+        <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+      </div>
+      
       <div 
         ref={containerRef} 
-        className="w-[160px] h-[300px] bg-slate-900/40 border border-white/5 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl relative min-h-[300px] z-10"
+        className="w-[160px] h-[300px] bg-slate-900/10 backdrop-blur-sm border border-white/5 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl relative min-h-[300px] z-10"
       >
-        {/* Ad placeholder while invoke.js executes */}
-        <div className="text-[10px] text-slate-800 font-bold uppercase tracking-widest animate-pulse text-center px-4">
-          Updating Ad Feed...
+        {/* Fallback/Placeholder */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+          <div className="w-12 h-12 rounded-full border-2 border-indigo-500/20 border-t-indigo-500/80 animate-spin mb-4"></div>
+          <span className="text-[9px] text-slate-700 font-bold uppercase tracking-widest">
+            Loading Board<br/>Resources...
+          </span>
         </div>
       </div>
     </div>

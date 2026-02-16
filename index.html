@@ -11,6 +11,28 @@
       if (typeof window !== 'undefined' && !window.process) {
         window.process = { env: {} };
       }
+      
+      // Mitigation for cross-origin SecurityErrors from 3rd party ad scripts
+      window.addEventListener('error', function(e) {
+        const isSecurityError = e.message && (
+          e.message.includes('SecurityError') || 
+          e.message.includes('cross-origin') || 
+          e.message.includes('ls0s9d8fs9df80') ||
+          e.message.includes('named property')
+        );
+        if (isSecurityError) {
+          e.preventDefault();
+          e.stopPropagation();
+          return true;
+        }
+      }, true);
+      
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.toString().includes('SecurityError')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
     </script>
     <style>
         :root {
