@@ -108,10 +108,10 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
             </div>
           </div>
           
-          {/* Inject an AdBanner every 2 sections for consistent revenue flow */}
+          {/* Inject an AdBanner every 2 sections with a unique index for staggered loading */}
           {(idx + 1) % 2 === 0 && idx !== sections.length - 1 && (
-            <div className="py-4 lg:py-8 border-y border-white/5 bg-slate-900/10 rounded-[2rem] flex justify-center overflow-hidden">
-              <AdBanner />
+            <div className="py-2 flex justify-center overflow-visible">
+              <AdBanner index={Math.floor((idx + 1) / 2)} />
             </div>
           )}
         </React.Fragment>
@@ -264,7 +264,7 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
               <>
                 {/* Mobile Ad Space Top */}
                 <div className="lg:hidden mb-12">
-                   <AdBanner />
+                   <AdBanner index={0} />
                    <div className="h-[1px] w-full bg-white/5 mt-8"></div>
                 </div>
                 <AestheticNotebook content={content} subject={subject.name} isPyq={view === 'pyqs'} isRevision={isRevision} />
@@ -280,7 +280,7 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
                   Focus on "Insight" sections for examiner traps identified in our 15-year audit.
                 </p>
               </div>
-              <AdBanner />
+              <AdBanner index={99} />
             </div>
           </aside>
         </div>
@@ -344,7 +344,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
         {/* Mobile Ad Slot - Center aligned */}
         <div className="lg:hidden mb-12 w-full flex justify-center">
-           <AdBanner />
+           <AdBanner index={0} />
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
@@ -392,7 +392,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
           </div>
 
           <aside className="w-full lg:w-[220px] shrink-0 space-y-8 hidden lg:block">
-            <AdBanner />
+            <AdBanner index={1} />
             <div className="premium-card p-6 rounded-[2rem] bg-indigo-600/5 border-indigo-500/10">
               <span className="text-[7px] font-black text-indigo-400 uppercase tracking-widest block mb-4">Preparation Progress</span>
               <div className="space-y-4">
