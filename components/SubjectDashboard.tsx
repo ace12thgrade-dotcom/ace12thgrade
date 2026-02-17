@@ -79,33 +79,42 @@ const AestheticNotebook: React.FC<{ content: string; subject: string; isPyq?: bo
   return (
     <div className="space-y-6 lg:space-y-10 w-full max-w-full mx-auto pb-24 px-1 overflow-x-hidden min-w-0">
       {sections.map((section, idx) => (
-        <div key={idx} className="animate-in fade-in slide-in-from-bottom-8 duration-700 w-full overflow-hidden min-w-0">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-black text-[10px]">{idx + 1}</div>
-            <h3 className="text-sm lg:text-base font-black text-white uppercase tracking-tighter">{section.title}</h3>
+        <React.Fragment key={idx}>
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 w-full overflow-hidden min-w-0">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-black text-[10px]">{idx + 1}</div>
+              <h3 className="text-sm lg:text-base font-black text-white uppercase tracking-tighter">{section.title}</h3>
+            </div>
+            <div className="premium-card p-6 lg:p-10 rounded-[2rem] lg:rounded-[3rem] group hover:border-indigo-500/20 transition-all duration-500 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-all"></div>
+               <div className="space-y-4 relative z-10">
+                 {section.lines.map((l, li) => {
+                   const isInsight = l.toUpperCase().includes('INSIGHT:');
+                   const isSolution = l.toUpperCase().includes('SOLUTION:');
+                   const isQuestion = l.toUpperCase().includes('QUESTION:');
+                   
+                   return (
+                     <p key={li} className={`text-xs lg:text-[14px] leading-relaxed font-bold tracking-tight ${
+                       isInsight ? 'text-indigo-400 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 italic' : 
+                       isSolution ? 'text-slate-200 border-l-4 border-indigo-500 pl-4 py-2' :
+                       isQuestion ? 'text-white text-base lg:text-lg' :
+                       'text-slate-400'
+                     }`}>
+                       {l.replace(/INSIGHT:|SOLUTION:|QUESTION:/gi, '').trim()}
+                     </p>
+                   );
+                 })}
+               </div>
+            </div>
           </div>
-          <div className="premium-card p-6 lg:p-10 rounded-[2rem] lg:rounded-[3rem] group hover:border-indigo-500/20 transition-all duration-500 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-all"></div>
-             <div className="space-y-4 relative z-10">
-               {section.lines.map((l, li) => {
-                 const isInsight = l.toUpperCase().includes('INSIGHT:');
-                 const isSolution = l.toUpperCase().includes('SOLUTION:');
-                 const isQuestion = l.toUpperCase().includes('QUESTION:');
-                 
-                 return (
-                   <p key={li} className={`text-xs lg:text-[14px] leading-relaxed font-bold tracking-tight ${
-                     isInsight ? 'text-indigo-400 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 italic' : 
-                     isSolution ? 'text-slate-200 border-l-4 border-indigo-500 pl-4 py-2' :
-                     isQuestion ? 'text-white text-base lg:text-lg' :
-                     'text-slate-400'
-                   }`}>
-                     {l.replace(/INSIGHT:|SOLUTION:|QUESTION:/gi, '').trim()}
-                   </p>
-                 );
-               })}
-             </div>
-          </div>
-        </div>
+          
+          {/* Inject an AdBanner every 2 sections for consistent revenue flow */}
+          {(idx + 1) % 2 === 0 && idx !== sections.length - 1 && (
+            <div className="py-4 lg:py-8 border-y border-white/5 bg-slate-900/10 rounded-[2rem] flex justify-center overflow-hidden">
+              <AdBanner />
+            </div>
+          )}
+        </React.Fragment>
       ))}
     </div>
   );
