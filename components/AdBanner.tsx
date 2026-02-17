@@ -6,17 +6,15 @@ const AdBanner: React.FC = () => {
   const scriptExecutedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent double injection in React Strict Mode
     if (!containerRef.current || scriptExecutedRef.current) return;
 
     const adContainer = containerRef.current;
     
     const loadAd = () => {
       try {
-        // Clear previous content
+        // Clear previous content to ensure a fresh load
         adContainer.innerHTML = '';
 
-        // Adsterra specific options
         const adKey = '22f76c9da64add65e5b5d83a9e570782';
         const atOptions = {
           'key': adKey,
@@ -26,27 +24,29 @@ const AdBanner: React.FC = () => {
           'params': {}
         };
 
-        // Set global options required by invoke.js
+        // Ensure global options are isolated to this execution
         (window as any).atOptions = atOptions;
 
-        // Create the script element
         const script = document.createElement('script');
         script.type = 'text/javascript';
         script.src = `https://www.highperformanceformat.com/${adKey}/invoke.js`;
         script.async = true;
+        
+        // Error handling for the script itself
+        script.onerror = () => {
+          console.warn('Ad script failed to load, keeping placeholder clean.');
+          if (adContainer) adContainer.style.opacity = '0.5';
+        };
 
-        // Append to container
         adContainer.appendChild(script);
         scriptExecutedRef.current = true;
-        
-        console.debug('Adsterra banner script injected');
       } catch (e) {
-        console.error('Adsterra banner initialization failed:', e);
+        console.error('Ad initialization error:', e);
       }
     };
 
-    // Delay slightly to ensure layout is stable
-    const timeoutId = setTimeout(loadAd, 800);
+    // 1-second delay for stability
+    const timeoutId = setTimeout(loadAd, 1000);
 
     return () => {
       clearTimeout(timeoutId);
@@ -56,23 +56,24 @@ const AdBanner: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-3 py-2 w-full">
-      <div className="flex items-center gap-2 opacity-40">
-        <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-        <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.3em] select-none">Sponsored</span>
-        <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
+    <div className="flex flex-col items-center gap-3 py-4 w-full select-none">
+      <div className="flex items-center gap-3 opacity-30">
+        <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-slate-500"></div>
+        <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em]">ADVERTISEMENT</span>
+        <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-slate-500"></div>
       </div>
       
       <div 
         ref={containerRef} 
-        className="w-[160px] h-[300px] bg-slate-900/20 backdrop-blur-sm border border-white/5 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl relative min-h-[300px] z-10 mx-auto"
+        className="w-[160px] h-[300px] bg-slate-950/40 backdrop-blur-md border border-white/5 rounded-3xl flex items-center justify-center overflow-hidden shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)] relative z-10 mx-auto transition-opacity duration-500"
       >
-        {/* Placeholder shown while script loads */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 pointer-events-none">
-          <div className="w-8 h-8 rounded-full border-2 border-indigo-500/10 border-t-indigo-500/60 animate-spin mb-3"></div>
-          <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">
-            Loading...
-          </span>
+        {/* Minimalist Loading State */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-slate-900/10">
+          <div className="w-6 h-6 rounded-full border-2 border-indigo-500/5 border-t-indigo-500/40 animate-spin mb-4"></div>
+          <div className="space-y-1">
+            <div className="h-1 w-12 bg-white/5 rounded-full mx-auto"></div>
+            <div className="h-1 w-8 bg-white/5 rounded-full mx-auto"></div>
+          </div>
         </div>
       </div>
     </div>

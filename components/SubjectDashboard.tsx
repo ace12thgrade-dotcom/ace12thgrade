@@ -253,8 +253,10 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
               </div>
             ) : (
               <>
-                <div className="lg:hidden mb-10 border-b border-white/5 pb-8">
+                {/* Mobile Ad Space Top */}
+                <div className="lg:hidden mb-12">
                    <AdBanner />
+                   <div className="h-[1px] w-full bg-white/5 mt-8"></div>
                 </div>
                 <AestheticNotebook content={content} subject={subject.name} isPyq={view === 'pyqs'} isRevision={isRevision} />
               </>
@@ -331,8 +333,8 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
-        {/* Mobile Ad Slot */}
-        <div className="lg:hidden mb-10 w-full">
+        {/* Mobile Ad Slot - Center aligned */}
+        <div className="lg:hidden mb-12 w-full flex justify-center">
            <AdBanner />
         </div>
 
