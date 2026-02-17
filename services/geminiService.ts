@@ -147,8 +147,9 @@ ${SYMBOL_INSTRUCTION}`;
 export const generateChapterAudio = async (notes: string, subject: string) => {
   return withRetry(async (apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
-    const cleanNotes = notes.replace(/TOPIC:|QUESTION:|INSIGHT:|SOLUTION:|\*\*|#/gi, '').substring(0, 1000);
-    const prompt = `Please read this summary for ${subject} in a clear, educational tone: ${cleanNotes}`;
+    // Increased character limit to 15,000 to ensure full narration of detailed notes
+    const cleanNotes = notes.replace(/TOPIC:|QUESTION:|INSIGHT:|SOLUTION:|\*\*|#/gi, '').substring(0, 15000);
+    const prompt = `Act as a professional educational narrator. Please read the following study material for Class 12 ${subject} in a clear, engaging, and slow educational tone. Read everything provided without skipping sections: ${cleanNotes}`;
     
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 const AdBanner: React.FC = () => {
@@ -12,7 +13,7 @@ const AdBanner: React.FC = () => {
     
     const loadAd = () => {
       try {
-        // Clear previous content to avoid stacking
+        // Clear previous content
         adContainer.innerHTML = '';
 
         // Adsterra specific options
@@ -31,7 +32,6 @@ const AdBanner: React.FC = () => {
         // Create the script element
         const script = document.createElement('script');
         script.type = 'text/javascript';
-        // Using https: explicitly for better security/loading
         script.src = `https://www.highperformanceformat.com/${adKey}/invoke.js`;
         script.async = true;
 
@@ -46,34 +46,32 @@ const AdBanner: React.FC = () => {
     };
 
     // Delay slightly to ensure layout is stable
-    const timeoutId = setTimeout(loadAd, 500);
+    const timeoutId = setTimeout(loadAd, 800);
 
     return () => {
       clearTimeout(timeoutId);
-      // Optional: don't clear innerHTML on unmount if you want the ad to stay visible during fast navigation
-      // but usually for ads, clearing is safer to prevent script conflicts.
       if (adContainer) adContainer.innerHTML = '';
       scriptExecutedRef.current = false;
     };
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-4 py-4">
-      <div className="flex items-center gap-2 opacity-50">
+    <div className="flex flex-col items-center gap-3 py-2 w-full">
+      <div className="flex items-center gap-2 opacity-40">
         <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-        <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] select-none">Sponsored Content</span>
+        <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.3em] select-none">Sponsored</span>
         <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
       </div>
       
       <div 
         ref={containerRef} 
-        className="w-[160px] h-[300px] bg-slate-900/10 backdrop-blur-sm border border-white/5 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl relative min-h-[300px] z-10"
+        className="w-[160px] h-[300px] bg-slate-900/20 backdrop-blur-sm border border-white/5 rounded-2xl flex items-center justify-center overflow-hidden shadow-2xl relative min-h-[300px] z-10 mx-auto"
       >
-        {/* Fallback/Placeholder */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <div className="w-12 h-12 rounded-full border-2 border-indigo-500/20 border-t-indigo-500/80 animate-spin mb-4"></div>
-          <span className="text-[9px] text-slate-700 font-bold uppercase tracking-widest">
-            Loading Board<br/>Resources...
+        {/* Placeholder shown while script loads */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 pointer-events-none">
+          <div className="w-8 h-8 rounded-full border-2 border-indigo-500/10 border-t-indigo-500/60 animate-spin mb-3"></div>
+          <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">
+            Loading...
           </span>
         </div>
       </div>

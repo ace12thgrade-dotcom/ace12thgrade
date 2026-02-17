@@ -252,7 +252,12 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
                 <button onClick={loadContent} className="px-8 py-3 bg-indigo-600 text-white rounded-full font-black text-[9px] uppercase tracking-widest hover:scale-105 transition-all">Force Sync</button>
               </div>
             ) : (
-              <AestheticNotebook content={content} subject={subject.name} isPyq={view === 'pyqs'} isRevision={isRevision} />
+              <>
+                <div className="lg:hidden mb-10 border-b border-white/5 pb-8">
+                   <AdBanner />
+                </div>
+                <AestheticNotebook content={content} subject={subject.name} isPyq={view === 'pyqs'} isRevision={isRevision} />
+              </>
             )}
           </div>
           
@@ -326,6 +331,11 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuer
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+        {/* Mobile Ad Slot */}
+        <div className="lg:hidden mb-10 w-full">
+           <AdBanner />
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8 px-2 lg:px-0">
             {filteredChapters.map((chapter) => (
