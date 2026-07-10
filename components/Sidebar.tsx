@@ -45,13 +45,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSubject, setActiveSubject }) =>
         ))}
       </nav>
 
-      <div className="p-3 lg:p-4 border-t border-white/5">
+      <div className="p-3 lg:p-4 border-t border-white/5 space-y-3">
         <div className="hidden lg:flex flex-col gap-3 p-4 bg-slate-900/50 border border-white/5 rounded-[1.5rem] text-white shadow-lg relative overflow-hidden transform hover:scale-[1.01] transition-all">
           <div className="relative z-10">
             <span className="text-[7px] font-black text-indigo-300 uppercase tracking-widest block mb-1">Board Year</span>
-            <span className="text-xl font-black tracking-tighter">2026</span>
+            <span className="text-xl font-black tracking-tighter">2026-27</span>
             <div className="w-full bg-white/5 h-1 rounded-full mt-2 overflow-hidden">
-              <div className="bg-indigo-500 h-full w-[65%] rounded-full"></div>
+              <div className="bg-indigo-500 h-full w-[85%] rounded-full"></div>
             </div>
           </div>
         </div>

@@ -1,6 +1,8 @@
 
 import { Subject } from './types';
 
+export const ADSTERRA_SMARTLINK = "https://www.effectivegatecpm.com/gmxeg379rd?key=027dc3046184bf440c2ddfd0ca39a15d";
+
 export const SUBJECTS: Subject[] = [
   {
     id: 'physics',
