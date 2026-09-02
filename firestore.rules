@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Ace12 learning content: notes, curriculum, pyqs, and books are accessible across all devices & browsers
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

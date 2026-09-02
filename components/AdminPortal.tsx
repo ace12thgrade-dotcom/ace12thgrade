@@ -337,13 +337,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
   };
 
   // Handle Change Passcode
-  const handleChangePass = (e: React.FormEvent) => {
+  const handleChangePass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPasscode !== confirmPasscode) {
       setPassMsg({ text: 'New passcodes do not match.', isError: true });
       return;
     }
-    const res = changeAdminPasscode(oldPasscode, newPasscode);
+    const res = await changeAdminPasscode(oldPasscode, newPasscode);
     setPassMsg({ text: res.message, isError: !res.success });
     if (res.success) {
       setOldPasscode('');
@@ -505,12 +505,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
                 <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
                   Ace12 Creator & Admin Portal
                 </h2>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold border border-emerald-500/20">
-                  Full Control
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold border border-emerald-500/20 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Cloud Live Synced</span>
                 </span>
               </div>
               <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                Logged in as: <span className="text-amber-800 dark:text-amber-400 font-bold">{OWNER_EMAIL}</span>
+                All changes sync automatically across all student devices & accounts.
               </p>
             </div>
           </div>

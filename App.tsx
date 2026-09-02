@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar.tsx';
 import SubjectDashboard from './components/SubjectDashboard.tsx';
 import ChatInterface from './components/ChatInterface.tsx';
 import AdminPortal from './components/AdminPortal.tsx';
-import { getActiveSubjects, CONTENT_UPDATE_EVENT, isAdminAuthenticated } from './services/contentStore.ts';
+import { getActiveSubjects, CONTENT_UPDATE_EVENT, isAdminAuthenticated, initContentSync } from './services/contentStore.ts';
 import { SubjectId, Chapter, Subject } from './types.ts';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -16,6 +16,12 @@ const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [adminFocus, setAdminFocus] = useState<{ subjectId?: string; chapterId?: string } | undefined>();
   const [isAdmin, setIsAdmin] = useState(isAdminAuthenticated());
+
+  // Initialize Real-Time Cloud Synchronization across all devices
+  useEffect(() => {
+    const cleanupSync = initContentSync();
+    return () => cleanupSync();
+  }, []);
 
   useEffect(() => {
     const handleContentUpdate = () => {
