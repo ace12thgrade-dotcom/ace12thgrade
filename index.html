@@ -4,17 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ace12 - Premium CBSE Study Hub</title>
+    <title>Ace12 - Class 12 CBSE Study Hub</title>
+    <meta name="description" content="A premium study platform for CBSE Class 12 students featuring comprehensive notes and 4250+ analyzed previous years' questions for Physics, Maths, Chemistry, Biology, Computer Science, and Physical Education.">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-      // Configure Tailwind with custom handwriting fonts
+      // Configure Tailwind with clean, natural typography
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              handwritten: ['"Playpen Sans"', '"Kalam"', 'cursive'],
-              notebook: ['"Kalam"', 'cursive'],
+              sans: ['"Plus Jakarta Sans"', '"Inter"', 'system-ui', 'sans-serif'],
+              serif: ['"Lora"', 'Georgia', 'serif'],
+              display: ['"Outfit"', '"Plus Jakarta Sans"', 'sans-serif'],
             }
           }
         }
@@ -46,14 +49,10 @@
       });
     </script>
     <style>
-        :root {
-            --primary: #818cf8;
-            --bg-base: #020617;
-        }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-base);
-            color: #e2e8f0;
+            background-color: #faf7f2;
+            color: #1e293b;
             -webkit-font-smoothing: antialiased;
             overflow: hidden; 
             font-size: 14px;
@@ -62,29 +61,9 @@
             margin: 0;
             padding: 0;
         }
-        
-        .mesh-bg {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: -1;
-            background-color: #020617;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.08) 0, transparent 50%), 
-                radial-gradient(at 50% 100%, rgba(59, 130, 246, 0.12) 0, transparent 50%);
-            filter: blur(80px);
-        }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .premium-card {
-            background: rgba(30, 41, 59, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.4);
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
     </style>
 <script type="importmap">
 {

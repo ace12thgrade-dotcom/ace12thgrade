@@ -1,229 +1,651 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Subject, Chapter } from '../types.ts';
-import { generateDetailedNotes, generatePremiumPYQs, getActiveKeyCount, getCurrentKeyIndex, getLastRotationReason } from '../services/geminiService.ts';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Subject, Chapter, UploadedBook } from '../types.ts';
+import { generateDetailedNotes, generatePremiumPYQs, getActiveKeyCount, getCurrentKeyIndex } from '../services/geminiService.ts';
 import { getInstantNotes, getInstantPYQs } from '../services/offlineNotesService.ts';
+import { getAllBooks, isAdminAuthenticated, CONTENT_UPDATE_EVENT } from '../services/contentStore.ts';
+import PDFViewerModal from './PDFViewerModal.tsx';
+import { BookOpen, FileText, Upload, Plus, ShieldCheck, Edit3, Download, Eye, Layers } from 'lucide-react';
 
 interface SubjectDashboardProps {
   subject: Subject;
   searchQuery?: string;
   selectedChapter: Chapter | null;
   setSelectedChapter: (chapter: Chapter | null) => void;
+  onOpenAdmin?: (subjectId?: string, chapterId?: string) => void;
 }
 
-function decodeBase64(base64: string) {
-  try {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-  } catch (e) { 
-    console.error("Base64 decoding failed", e);
-    return new Uint8Array(0); 
-  }
-}
+export type StudyTheme = 'paper' | 'oxford' | 'slate';
+export type StudyFont = 'sans' | 'serif' | 'display';
+export type StudyFontSize = 'sm' | 'md' | 'lg' | 'xl';
+export type TabViewMode = 'all' | 'notes' | 'formulas' | 'pyqs' | 'diagrams' | 'books';
 
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-  const bufferLength = Math.floor(data.byteLength / 2);
-  const dataInt16 = new Int16Array(data.buffer, 0, bufferLength);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-  
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
+export const sanitizeTheme = (val: unknown): StudyTheme => {
+  if (val === 'oxford' || val === 'slate' || val === 'paper') return val;
+  return 'paper';
+};
+
+export const sanitizeFont = (val: unknown): StudyFont => {
+  if (val === 'serif' || val === 'display' || val === 'sans') return val;
+  return 'sans';
+};
+
+export const sanitizeFontSize = (val: unknown): StudyFontSize => {
+  if (val === 'sm' || val === 'lg' || val === 'xl' || val === 'md') return val;
+  return 'md';
+};
+
+const THEME_CLASSES = {
+  paper: {
+    card: 'bg-white border-[#e7ded1] shadow-sm hover:shadow-md text-slate-800',
+    badge: 'bg-amber-100 text-amber-900 border border-amber-200/80 font-bold',
+    title: 'text-amber-950 font-black',
+    subtopic: 'text-amber-950 bg-[#faf6ed] border-l-4 border-l-amber-600 px-4 py-2.5 rounded-r-xl font-bold shadow-xs',
+    insight: 'bg-[#fef9ee] border border-amber-300/80 text-amber-950 shadow-xs',
+    solution: 'bg-[#f8fafc] border-l-4 border-l-indigo-600 border border-slate-200 text-slate-900 shadow-xs',
+    stepBadge: 'bg-indigo-100 text-indigo-900 border border-indigo-200 font-black',
+    rubricBox: 'bg-emerald-50/80 border border-emerald-300/80 text-emerald-950 shadow-xs',
+    codeBg: 'bg-slate-900 text-emerald-300',
+    formulaBox: 'bg-amber-50/70 border border-amber-300/80 rounded-2xl p-4 text-amber-950 shadow-xs',
+    diagramBox: 'bg-indigo-50/50 border border-indigo-200 rounded-2xl p-4 text-indigo-950',
+    text: 'text-slate-800',
+  },
+  oxford: {
+    card: 'bg-white border-slate-200 shadow-sm hover:shadow-md text-slate-900',
+    badge: 'bg-blue-100 text-blue-900 border border-blue-200 font-bold',
+    title: 'text-slate-900 font-black',
+    subtopic: 'text-slate-900 bg-slate-50 border-l-4 border-l-blue-600 px-4 py-2.5 rounded-r-xl font-bold shadow-xs',
+    insight: 'bg-blue-50/80 border border-blue-200 text-blue-950 shadow-xs',
+    solution: 'bg-slate-50 border-l-4 border-l-emerald-600 border border-slate-200 text-slate-900 shadow-xs',
+    stepBadge: 'bg-blue-100 text-blue-900 border border-blue-200 font-black',
+    rubricBox: 'bg-emerald-50/80 border border-emerald-200 text-emerald-950 shadow-xs',
+    codeBg: 'bg-slate-950 text-sky-300',
+    formulaBox: 'bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-900 shadow-xs',
+    diagramBox: 'bg-sky-50/60 border border-sky-200 rounded-2xl p-4 text-slate-900',
+    text: 'text-slate-800',
+  },
+  slate: {
+    card: 'bg-slate-900/90 border-slate-800 shadow-md text-slate-200',
+    badge: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold',
+    title: 'text-white font-black',
+    subtopic: 'text-indigo-200 bg-slate-800/80 border-l-4 border-l-indigo-500 px-4 py-2.5 rounded-r-xl font-bold shadow-xs',
+    insight: 'bg-indigo-950/40 border border-indigo-800/50 text-indigo-200 shadow-xs',
+    solution: 'bg-slate-800/60 border-l-4 border-l-emerald-500 border border-slate-700/50 text-slate-200 shadow-xs',
+    stepBadge: 'bg-indigo-900/80 text-indigo-200 border border-indigo-700/50 font-black',
+    rubricBox: 'bg-emerald-950/40 border border-emerald-800/50 text-emerald-200 shadow-xs',
+    codeBg: 'bg-black/80 text-indigo-300',
+    formulaBox: 'bg-slate-800/60 border border-slate-700 rounded-2xl p-4 text-slate-200 shadow-xs',
+    diagramBox: 'bg-slate-800/40 border border-slate-700 rounded-2xl p-4 text-slate-200',
+    text: 'text-slate-300',
   }
-  return buffer;
-}
+};
+
+const THEME_CONTAINER_STYLES = {
+  paper: 'bg-[#faf8f4] text-slate-900',
+  oxford: 'bg-[#f8fafc] text-slate-900',
+  slate: 'bg-[#0b1120] text-slate-100',
+};
+
+const HEADER_STYLES = {
+  paper: 'bg-[#faf8f4]/95 border-[#e8dfd1] text-amber-950',
+  oxford: 'bg-white/95 border-slate-200 text-slate-900',
+  slate: 'bg-slate-900/95 border-slate-800 text-white',
+};
+
+const TAB_ACTIVE_STYLES = {
+  paper: 'bg-amber-800 text-white shadow-sm',
+  oxford: 'bg-blue-700 text-white shadow-sm',
+  slate: 'bg-indigo-600 text-white shadow-sm',
+};
 
 export interface NotebookConfig {
-  theme: 'midnight' | 'cream' | 'chalkboard';
-  font: 'handwritten' | 'notebook' | 'sans';
-  size: 'sm' | 'md' | 'lg' | 'xl';
+  theme?: StudyTheme;
+  font?: StudyFont;
+  size?: StudyFontSize;
 }
 
-const AestheticNotebook: React.FC<{ 
-  content: string; 
-  subject: string; 
-  isPyq?: boolean; 
-  isRevision?: boolean;
-  config: NotebookConfig;
-}> = ({ content, subject, isPyq, isRevision, config }) => {
-  const lines = content.split('\n');
-  const sections: { title: string; lines: string[] }[] = [];
-  let currentSection: { title: string; lines: string[] } | null = null;
+interface SectionItem {
+  type: 'text' | 'subtopic' | 'code' | 'insight' | 'solution' | 'step' | 'formula' | 'rubric' | 'diagram';
+  text: string;
+  lang?: string;
+  marks?: string;
+  year?: string;
+}
 
-  lines.forEach(line => {
-    const rawLine = line.trim();
-    if (!rawLine) return;
-    if (/^[\|=_\-\s*●·○#]+$/.test(rawLine) && rawLine.length > 2) return;
+interface ParsedSection {
+  title: string;
+  tag?: 'formula' | 'notes' | 'pyq' | 'diagram' | 'general';
+  marks?: string;
+  year?: string;
+  items: SectionItem[];
+}
 
-    let scrubbed = rawLine.replace(/^(\|)+|(\|)+$/g, '').trim();
-    if (!scrubbed) return;
+// Helper to render bold markdown (**text**), formulas, and highlight keywords
+const renderFormattedText = (text: string, theme?: StudyTheme) => {
+  if (!text) return null;
+
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const innerText = part.slice(2, -2);
+      return (
+        <strong 
+          key={index} 
+          className={`font-black tracking-tight ${
+            theme === 'paper'
+              ? 'text-amber-950 font-black'
+              : theme === 'oxford'
+              ? 'text-slate-950 font-black'
+              : 'text-white font-black'
+          }`}
+        >
+          {innerText}
+        </strong>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
+
+// Parser to split raw content into clean human-readable study blocks
+const parseStudyContent = (rawContent: string, isPyq?: boolean, isRevision?: boolean): ParsedSection[] => {
+  const lines = rawContent.split('\n');
+  const parsedSections: ParsedSection[] = [];
+  let currentSection: ParsedSection | null = null;
+  
+  let inCodeBlock = false;
+  let codeLines: string[] = [];
+  let codeLang = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    // Code Block Boundary
+    if (trimmed.startsWith('```')) {
+      if (inCodeBlock) {
+        if (currentSection) {
+          currentSection.items.push({
+            type: 'code',
+            text: codeLines.join('\n'),
+            lang: codeLang
+          });
+        }
+        inCodeBlock = false;
+        codeLines = [];
+        codeLang = '';
+      } else {
+        inCodeBlock = true;
+        codeLang = trimmed.substring(3).trim();
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(rawLine);
+      continue;
+    }
+
+    if (!trimmed) continue;
+    
+    // Skip divider clutter
+    if (/^[\|=_\-\s*●·○#]+$/.test(trimmed) && trimmed.length > 3) continue;
+
+    let scrubbed = trimmed.replace(/^(\|)+|(\|)+$/g, '').trim();
+    if (!scrubbed) continue;
 
     const upper = scrubbed.toUpperCase();
-    const isNewBoxTrigger = 
+
+    // Major Section Header triggers
+    const isMajorSection = 
       upper.startsWith('TOPIC:') || 
       upper.startsWith('QUESTION:') || 
-      upper.startsWith('CONCEPT:') ||
       upper.startsWith('Q:') ||
-      (rawLine.startsWith('# ')) ||
-      (rawLine.startsWith('## ')) ||
-      (rawLine.startsWith('**') && rawLine.endsWith('**') && rawLine.length < 80);
+      upper.startsWith('Q1.') ||
+      upper.startsWith('Q2.') ||
+      upper.startsWith('Q3.') ||
+      upper.startsWith('Q4.') ||
+      upper.startsWith('Q5.') ||
+      upper.startsWith('Q6.') ||
+      upper.startsWith('Q7.') ||
+      upper.startsWith('Q8.') ||
+      upper.startsWith('Q9.') ||
+      upper.startsWith('Q10.') ||
+      upper.startsWith('Q11.') ||
+      upper.startsWith('Q12.') ||
+      upper.startsWith('Q13.') ||
+      upper.startsWith('Q14.') ||
+      upper.startsWith('Q15.') ||
+      (trimmed.startsWith('# ') && !trimmed.startsWith('### ')) ||
+      (trimmed.startsWith('## ') && !trimmed.startsWith('### '));
 
-    if (isNewBoxTrigger) {
-      if (currentSection) sections.push(currentSection);
-      const cleanTitle = scrubbed.replace(/TOPIC:|QUESTION:|CONCEPT:|Q:|#|\*\*/gi, '').trim();
-      currentSection = { title: cleanTitle, lines: [] };
-    } else if (currentSection) {
-      currentSection.lines.push(scrubbed);
-    } else {
-      currentSection = { title: isRevision ? "Chapter Overview" : isPyq ? "MIQ Breakdown" : "Introduction", lines: [scrubbed] };
+    if (isMajorSection) {
+      if (currentSection) {
+        parsedSections.push(currentSection);
+      }
+
+      let cleanTitle = scrubbed.replace(/^TOPIC:|^QUESTION:|^Q:|^#+|^Q\d+\.\s*/gi, '').replace(/\*\*/g, '').trim();
+      
+      let sectionTag: ParsedSection['tag'] = 'notes';
+      if (upper.includes('FORMULA') || upper.includes('BLUEPRINT')) {
+        sectionTag = 'formula';
+      } else if (upper.includes('QUESTION') || upper.includes('MARKS') || upper.startsWith('Q') || isPyq) {
+        sectionTag = 'pyq';
+      } else if (upper.includes('DIAGRAM') || upper.includes('SCHEMATIC') || upper.includes('FIGURE')) {
+        sectionTag = 'diagram';
+      }
+
+      // Extract marks badge if available e.g. [5 Marks, Delhi 2024]
+      let marksMatch = scrubbed.match(/\[([0-9]+\s*Marks?[^\]]*)\]/i);
+      let marks = marksMatch ? marksMatch[1] : undefined;
+
+      currentSection = { 
+        title: cleanTitle || "Core Topic", 
+        tag: sectionTag,
+        marks,
+        items: [] 
+      };
+      continue;
     }
-  });
-  if (currentSection) sections.push(currentSection);
 
-  // Colors based on theme and section index
-  const getSectionStyles = (idx: number, theme: 'midnight' | 'cream' | 'chalkboard') => {
-    const index = idx % 5;
-    if (theme === 'cream') {
-      const colors = [
-        { border: 'border-[#bfdbfe] border-l-4 border-l-blue-500', bg: 'bg-blue-50/20 hover:bg-blue-50/40', text: 'text-blue-950', badge: 'bg-blue-100 text-blue-900', titleColor: 'text-blue-900' },
-        { border: 'border-[#fecdd3] border-l-4 border-l-rose-500', bg: 'bg-rose-50/20 hover:bg-rose-50/40', text: 'text-rose-950', badge: 'bg-rose-100 text-rose-900', titleColor: 'text-rose-900' },
-        { border: 'border-[#fef08a] border-l-4 border-l-amber-500', bg: 'bg-amber-50/10 hover:bg-amber-50/30', text: 'text-amber-950', badge: 'bg-amber-100 text-amber-900', titleColor: 'text-amber-900' },
-        { border: 'border-[#a7f3d0] border-l-4 border-l-emerald-500', bg: 'bg-emerald-50/10 hover:bg-emerald-50/30', text: 'text-emerald-950', badge: 'bg-emerald-100 text-emerald-900', titleColor: 'text-emerald-900' },
-        { border: 'border-[#ddd6fe] border-l-4 border-l-purple-500', bg: 'bg-purple-50/20 hover:bg-purple-50/40', text: 'text-purple-950', badge: 'bg-purple-100 text-purple-900', titleColor: 'text-purple-900' },
-      ];
-      return colors[index];
-    } else if (theme === 'chalkboard') {
-      const colors = [
-        { border: 'border-cyan-500/30 border-l-4 border-l-cyan-400', bg: 'bg-cyan-950/10 hover:bg-cyan-950/20', text: 'text-cyan-200', badge: 'bg-cyan-900/60 text-cyan-200', titleColor: 'text-cyan-300' },
-        { border: 'border-pink-500/30 border-l-4 border-l-pink-400', bg: 'bg-pink-950/10 hover:bg-pink-950/20', text: 'text-pink-200', badge: 'bg-pink-900/60 text-pink-200', titleColor: 'text-pink-300' },
-        { border: 'border-yellow-500/30 border-l-4 border-l-yellow-400', bg: 'bg-yellow-950/10 hover:bg-yellow-950/20', text: 'text-yellow-100', badge: 'bg-yellow-900/60 text-yellow-200', titleColor: 'text-yellow-300' },
-        { border: 'border-emerald-500/30 border-l-4 border-l-emerald-400', bg: 'bg-emerald-950/10 hover:bg-emerald-950/20', text: 'text-emerald-200', badge: 'bg-emerald-900/60 text-emerald-200', titleColor: 'text-emerald-300' },
-        { border: 'border-orange-500/30 border-l-4 border-l-orange-400', bg: 'bg-orange-950/10 hover:bg-orange-950/20', text: 'text-orange-200', badge: 'bg-orange-900/60 text-orange-200', titleColor: 'text-orange-300' },
-      ];
-      return colors[index];
-    } else {
-      // midnight
-      const colors = [
-        { border: 'border-indigo-500/20 border-l-4 border-l-indigo-500', bg: 'bg-indigo-500/5 hover:bg-indigo-500/10', text: 'text-slate-300', badge: 'bg-indigo-500/20 text-indigo-300', titleColor: 'text-indigo-300' },
-        { border: 'border-pink-500/20 border-l-4 border-l-pink-500', bg: 'bg-pink-500/5 hover:bg-pink-500/10', text: 'text-slate-300', badge: 'bg-pink-500/20 text-pink-300', titleColor: 'text-pink-300' },
-        { border: 'border-amber-500/20 border-l-4 border-l-amber-500', bg: 'bg-amber-500/5 hover:bg-amber-500/10', text: 'text-slate-300', badge: 'bg-amber-500/20 text-amber-300', titleColor: 'text-amber-300' },
-        { border: 'border-emerald-500/20 border-l-4 border-l-emerald-500', bg: 'bg-emerald-500/5 hover:bg-emerald-500/10', text: 'text-slate-300', badge: 'bg-emerald-500/20 text-emerald-300', titleColor: 'text-emerald-300' },
-        { border: 'border-purple-500/20 border-l-4 border-l-purple-500', bg: 'bg-purple-500/5 hover:bg-purple-500/10', text: 'text-slate-300', badge: 'bg-purple-500/20 text-purple-300', titleColor: 'text-purple-300' },
-      ];
-      return colors[index];
+    if (!currentSection) {
+      currentSection = { 
+        title: isRevision ? "Complete Syllabus Master Overview" : isPyq ? "Board Examination Solved Question" : "Chapter Concept Master Vault", 
+        tag: isPyq ? 'pyq' : 'notes',
+        items: [] 
+      };
     }
-  };
 
-  const getFontClass = (font: 'handwritten' | 'notebook' | 'sans') => {
-    if (font === 'handwritten') return 'font-handwritten tracking-wide';
-    if (font === 'notebook') return 'font-notebook tracking-widest';
+    // Subtopic or Concept Callouts: **1. Concept Title:** or **Concept Name:**
+    const isSubtopic = 
+      (trimmed.startsWith('**') && trimmed.includes(':**')) ||
+      (trimmed.startsWith('### ')) ||
+      (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 90);
+
+    if (isSubtopic) {
+      currentSection.items.push({
+        type: 'subtopic',
+        text: scrubbed
+      });
+    } else if (upper.startsWith('INSIGHT:') || upper.startsWith('TIP:') || upper.startsWith('EXAMINER TIP:') || upper.startsWith('EXAMINER NOTE:')) {
+      currentSection.items.push({
+        type: 'insight',
+        text: scrubbed.replace(/^INSIGHT:|^TIP:|^EXAMINER TIP:|^EXAMINER NOTE:/i, '').trim()
+      });
+    } else if (upper.startsWith('CBSE MARKING RUBRIC:') || upper.startsWith('MARKING RUBRIC:') || upper.startsWith('MARKING SCHEME:')) {
+      currentSection.items.push({
+        type: 'rubric',
+        text: scrubbed.replace(/^CBSE MARKING RUBRIC:|^MARKING RUBRIC:|^MARKING SCHEME:/i, '').trim()
+      });
+    } else if (upper.startsWith('SOLUTION:')) {
+      currentSection.items.push({
+        type: 'solution',
+        text: scrubbed.replace(/^SOLUTION:/i, '').trim()
+      });
+    } else if (upper.startsWith('STEP ') || upper.startsWith('STEP:')) {
+      currentSection.items.push({
+        type: 'step',
+        text: scrubbed
+      });
+    } else if (upper.startsWith('FORMULA:') || upper.includes('WHEN & WHY TO APPLY:') || (trimmed.startsWith('- **') && (trimmed.includes('Formula:') || trimmed.includes('Law:')))) {
+      currentSection.items.push({
+        type: 'formula',
+        text: scrubbed
+      });
+    } else if (upper.includes('DIAGRAM:') || upper.includes('SCHEMATIC:') || upper.includes('RAY DIAGRAM:')) {
+      currentSection.items.push({
+        type: 'diagram',
+        text: scrubbed
+      });
+    } else {
+      currentSection.items.push({
+        type: 'text',
+        text: scrubbed
+      });
+    }
+  }
+
+  if (currentSection) {
+    parsedSections.push(currentSection);
+  }
+
+  return parsedSections;
+};
+
+// Component for rendering human-crafted, clean aesthetic study notes
+const NaturalNotebookViewer: React.FC<{ 
+  content: string; 
+  pyqContent?: string;
+  subject: string; 
+  tabMode: TabViewMode;
+  isRevision?: boolean;
+  config?: NotebookConfig;
+  onSelectTab: (tab: TabViewMode) => void;
+}> = ({ content, pyqContent, subject, tabMode, isRevision, config, onSelectTab }) => {
+  const [filterQuery, setFilterQuery] = useState('');
+
+  const notesSections = useMemo(() => parseStudyContent(content, false, isRevision), [content, isRevision]);
+  const pyqSections = useMemo(() => {
+    if (pyqContent) {
+      return parseStudyContent(pyqContent, true, isRevision);
+    }
+    return [];
+  }, [pyqContent, isRevision]);
+
+  // Combine or filter sections based on active tab
+  const displayedSections = useMemo(() => {
+    let list: ParsedSection[] = [];
+    if (tabMode === 'pyqs') {
+      list = pyqSections.length > 0 ? pyqSections : notesSections.filter(s => s.tag === 'pyq');
+    } else if (tabMode === 'formulas') {
+      list = notesSections.filter(s => 
+        s.tag === 'formula' || 
+        s.title.toLowerCase().includes('formula') || 
+        s.title.toLowerCase().includes('blueprint') ||
+        s.items.some(i => i.type === 'formula')
+      );
+      if (list.length === 0) list = notesSections;
+    } else if (tabMode === 'diagrams') {
+      list = notesSections.filter(s => 
+        s.tag === 'diagram' || 
+        s.title.toLowerCase().includes('diagram') || 
+        s.items.some(i => i.type === 'diagram' || i.type === 'code')
+      );
+      if (list.length === 0) list = notesSections;
+    } else {
+      // 'all' or 'notes'
+      list = notesSections;
+    }
+
+    if (!filterQuery.trim()) return list;
+
+    const q = filterQuery.toLowerCase();
+    return list.filter(sec => 
+      sec.title.toLowerCase().includes(q) ||
+      sec.items.some(item => item.text.toLowerCase().includes(q))
+    );
+  }, [tabMode, notesSections, pyqSections, filterQuery]);
+
+  const activeTheme: StudyTheme = sanitizeTheme(config?.theme);
+  const activeFont: StudyFont = sanitizeFont(config?.font);
+  const activeSize: StudyFontSize = sanitizeFontSize(config?.size);
+
+  const getFontClass = (font: StudyFont) => {
+    if (font === 'serif') return 'font-serif';
+    if (font === 'display') return 'font-display';
     return 'font-sans';
   };
 
-  const getSizeClass = (size: 'sm' | 'md' | 'lg' | 'xl') => {
-    if (size === 'sm') return 'text-[12px] lg:text-[14px]';
-    if (size === 'md') return 'text-[14px] lg:text-[16px]';
-    if (size === 'lg') return 'text-[16px] lg:text-[18px]';
-    return 'text-[18px] lg:text-[21px]';
+  const getSizeClass = (size: StudyFontSize) => {
+    if (size === 'sm') return 'text-[13px] lg:text-[14px] leading-relaxed';
+    if (size === 'md') return 'text-[15px] lg:text-[16px] leading-relaxed';
+    if (size === 'lg') return 'text-[17px] lg:text-[18px] leading-relaxed';
+    return 'text-[19px] lg:text-[20px] leading-relaxed';
   };
 
+  const themeClasses = THEME_CLASSES[activeTheme] || THEME_CLASSES.paper;
+
   return (
-    <div className={`space-y-6 lg:space-y-10 w-full max-w-full mx-auto pb-24 px-1 overflow-x-hidden min-w-0 ${getFontClass(config.font)} ${getSizeClass(config.size)}`}>
-      {sections.map((section, idx) => {
-        const style = getSectionStyles(idx, config.theme);
-        return (
-          <React.Fragment key={idx}>
-            <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 w-full overflow-hidden min-w-0">
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${style.badge}`}>
-                  {idx + 1}
+    <div className={`space-y-6 lg:space-y-8 w-full max-w-full mx-auto pb-28 px-1 ${getFontClass(activeFont)} ${getSizeClass(activeSize)}`}>
+      {/* Search & Topic Filter Bar */}
+      <div className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 ${themeClasses.card}`}>
+        <div className="flex items-center gap-2.5 w-full sm:w-auto flex-1">
+          <span className="text-base opacity-70">🔍</span>
+          <input 
+            type="text"
+            placeholder="Search within this chapter (e.g. formula, named reaction, derivation, law)..."
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-xs font-semibold placeholder:opacity-50"
+          />
+          {filterQuery && (
+            <button 
+              onClick={() => setFilterQuery('')}
+              className="text-xs px-2 py-0.5 rounded bg-black/10 hover:bg-black/20 font-bold"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 text-xs font-bold opacity-75">
+          <span>Showing {displayedSections.length} {tabMode === 'pyqs' ? 'Solved PYQs' : 'Sections'}</span>
+        </div>
+      </div>
+
+      {/* Main Study Sections */}
+      {displayedSections.length === 0 ? (
+        <div className={`p-12 text-center rounded-3xl border ${themeClasses.card}`}>
+          <p className="font-bold text-base mb-2">No matching topics found for "{filterQuery}".</p>
+          <button 
+            onClick={() => setFilterQuery('')}
+            className="px-4 py-1.5 bg-amber-800 text-white text-xs font-bold rounded-xl"
+          >
+            Clear Filter
+          </button>
+        </div>
+      ) : (
+        displayedSections.map((section, idx) => {
+          const isPyqCard = tabMode === 'pyqs' || section.tag === 'pyq' || section.marks !== undefined;
+
+          return (
+            <div key={idx} className="w-full">
+              {/* Section Header */}
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${themeClasses.badge}`}>
+                    {isPyqCard ? `Q${idx + 1}` : idx + 1}
+                  </div>
+                  <h3 className={`text-base lg:text-xl uppercase tracking-tight ${themeClasses.title}`}>
+                    {section.title}
+                  </h3>
                 </div>
-                <h3 className={`font-black uppercase tracking-tighter text-sm lg:text-base ${style.titleColor}`}>
-                  {section.title}
-                </h3>
+
+                {section.marks && (
+                  <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-extrabold text-xs rounded-full">
+                    {section.marks}
+                  </span>
+                )}
               </div>
-              <div className={`p-6 lg:p-10 rounded-[2rem] lg:rounded-[3rem] border transition-all duration-500 relative overflow-hidden ${
-                config.theme === 'cream' 
-                  ? 'bg-[#fdfbf7] border-[#e8dfcf] shadow-md hover:shadow-lg' 
-                  : config.theme === 'chalkboard'
-                  ? 'bg-[#182e23] border-[#2b4c3d] shadow-lg'
-                  : 'premium-card hover:border-indigo-500/20'
-              } ${style.border} ${style.bg}`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                <div className="space-y-4 relative z-10">
-                  {section.lines.map((l, li) => {
-                    const isInsight = l.toUpperCase().includes('INSIGHT:');
-                    const isSolution = l.toUpperCase().includes('SOLUTION:');
-                    const isQuestion = l.toUpperCase().includes('QUESTION:');
-                    
+
+              {/* Section Card */}
+              <div className={`p-6 lg:p-8 rounded-2xl lg:rounded-3xl border transition-all ${themeClasses.card}`}>
+                <div className="space-y-4">
+                  {section.items.map((item, itemIdx) => {
+                    if (item.type === 'subtopic') {
+                      return (
+                        <div key={itemIdx} className={`my-3.5 ${themeClasses.subtopic}`}>
+                          {renderFormattedText(item.text, config?.theme)}
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'formula') {
+                      return (
+                        <div key={itemIdx} className={`my-3 font-mono ${themeClasses.formulaBox}`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-900 dark:text-amber-300">
+                              ⚡ Formula & When-To-Apply
+                            </span>
+                          </div>
+                          <div className="font-bold leading-relaxed">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'diagram') {
+                      return (
+                        <div key={itemIdx} className={`my-3 ${themeClasses.diagramBox}`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-900 dark:text-indigo-300">
+                              📐 Board Diagram & Schematic
+                            </span>
+                          </div>
+                          <div className="leading-relaxed font-medium">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'rubric') {
+                      return (
+                        <div key={itemIdx} className={`p-4 my-3 rounded-2xl ${themeClasses.rubricBox}`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-950 dark:text-emerald-300">
+                              ✅ CBSE Stepwise Marking Rubric
+                            </span>
+                          </div>
+                          <div className="leading-relaxed font-semibold text-xs lg:text-sm">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'solution') {
+                      return (
+                        <div key={itemIdx} className={`p-4 my-3 rounded-2xl ${themeClasses.solution}`}>
+                          <span className="text-xs font-black uppercase tracking-wider block mb-1 text-emerald-700 dark:text-emerald-400">
+                            ✍️ Complete Verified Solution:
+                          </span>
+                          <div className="leading-relaxed font-semibold">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'step') {
+                      const colonIdx = item.text.indexOf(':');
+                      const stepLabel = colonIdx !== -1 ? item.text.substring(0, colonIdx) : item.text;
+                      const stepContent = colonIdx !== -1 ? item.text.substring(colonIdx + 1).trim() : '';
+
+                      return (
+                        <div key={itemIdx} className="flex items-start gap-3 py-1.5">
+                          <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase shrink-0 mt-0.5 ${themeClasses.stepBadge}`}>
+                            {stepLabel}
+                          </span>
+                          <div className="font-semibold leading-relaxed flex-1">
+                            {renderFormattedText(stepContent, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'insight') {
+                      return (
+                        <div key={itemIdx} className={`p-4 my-3 rounded-2xl text-xs lg:text-sm ${themeClasses.insight}`}>
+                          <span className="font-black block mb-1">💡 Examiner Insight & Common Mistakes:</span>
+                          <div className="leading-relaxed font-medium">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'code') {
+                      return (
+                        <div key={itemIdx} className="my-4 rounded-2xl overflow-hidden border border-slate-700/50 shadow-inner">
+                          <div className="bg-slate-950 px-4 py-2 flex justify-between items-center text-[11px] font-mono text-slate-400 border-b border-slate-800">
+                            <span className="uppercase">{item.lang || 'code/diagram'} block</span>
+                            <button 
+                              onClick={() => navigator.clipboard.writeText(item.text)}
+                              className="hover:text-white transition-colors px-2.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          <pre className={`p-4 overflow-x-auto font-mono text-xs leading-relaxed ${themeClasses.codeBg}`}>
+                            <code>{item.text}</code>
+                          </pre>
+                        </div>
+                      );
+                    }
+
+                    // Standard paragraph / bullet text
                     return (
-                      <p key={li} className={`leading-relaxed font-bold ${
-                        isInsight 
-                          ? config.theme === 'cream'
-                            ? 'text-indigo-900 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 italic'
-                            : config.theme === 'chalkboard'
-                            ? 'text-cyan-300 p-4 bg-cyan-950/40 rounded-2xl border border-cyan-800/40 italic'
-                            : 'text-indigo-400 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 italic'
-                          : isSolution 
-                          ? config.theme === 'cream'
-                            ? 'text-slate-800 border-l-4 border-amber-600 pl-4 py-2'
-                            : config.theme === 'chalkboard'
-                            ? 'text-[#dcebe1] border-l-4 border-emerald-500 pl-4 py-2'
-                            : 'text-slate-200 border-l-4 border-indigo-500 pl-4 py-2'
-                          : isQuestion 
-                          ? config.theme === 'cream'
-                            ? 'text-slate-900 font-extrabold text-base lg:text-lg'
-                            : config.theme === 'chalkboard'
-                            ? 'text-white font-extrabold text-base lg:text-lg'
-                            : 'text-white text-base lg:text-lg'
-                          : config.theme === 'cream'
-                          ? 'text-slate-700'
-                          : config.theme === 'chalkboard'
-                          ? 'text-[#b4d1be]'
-                          : 'text-slate-400'
-                      }`}>
-                        {l.replace(/INSIGHT:|SOLUTION:|QUESTION:/gi, '').trim()}
-                      </p>
+                      <div key={itemIdx} className={`leading-relaxed font-medium ${themeClasses.text}`}>
+                        {renderFormattedText(item.text, config?.theme)}
+                      </div>
                     );
                   })}
                 </div>
               </div>
             </div>
-            
-          </React.Fragment>
-        );
-      })}
+          );
+        })
+      )}
+
+      {/* End of Notes Quick Action (When in Notes View) */}
+      {tabMode === 'notes' && pyqSections.length > 0 && (
+        <div className={`p-6 rounded-3xl border text-center ${themeClasses.card}`}>
+          <h4 className="font-black text-lg mb-2">Ready for Past 15-Year Board Questions?</h4>
+          <p className="text-xs opacity-75 mb-4 max-w-md mx-auto">
+            Test your knowledge with fully solved 4-5 PYQs with step-by-step CBSE marking rubrics.
+          </p>
+          <button 
+            onClick={() => onSelectTab('pyqs')}
+            className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+          >
+            Open 15-Year Solved Board PYQs →
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () => void }> = ({ chapter, subject, onClose }) => {
-  const [view, setView] = useState<'notes' | 'pyqs'>('notes');
-  const [content, setContent] = useState<string>('');
+// Chapter Detail View
+const ChapterView: React.FC<{ 
+  chapter: Chapter; 
+  subject: Subject; 
+  onClose: () => void;
+  onOpenAdmin?: (subjectId?: string, chapterId?: string) => void;
+}> = ({ chapter, subject, onClose, onOpenAdmin }) => {
+  const [tabMode, setTabMode] = useState<TabViewMode>('notes');
+  const [notesContent, setNotesContent] = useState<string>('');
+  const [pyqContent, setPyqContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncingAI, setIsSyncingAI] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(true); // Content is unlocked instantly and offline-capable!
-  const [isSpeaking, setIsSpeaking] = useState(false); // Browser Speech Synthesis State
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [books, setBooks] = useState<UploadedBook[]>([]);
+  const [activeViewerBook, setActiveViewerBook] = useState<UploadedBook | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
+
   const isRevision = chapter.id.includes('_rev');
 
-  // Default to chalkboard (Chalk), handwritten (Playpen), and md (medium) as requested
-  const [theme, setTheme] = useState<'midnight' | 'cream' | 'chalkboard'>(() => {
-    return (localStorage.getItem('ace12_theme') as any) || 'chalkboard';
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const all = await getAllBooks();
+        setBooks(all.filter(b => b.subjectId === subject.id && (!b.chapterId || b.chapterId === chapter.id)));
+      } catch (err) {
+        console.error("Failed to load books for chapter", err);
+      }
+    };
+    loadBooks();
+
+    const handleUpdate = () => {
+      loadBooks();
+      setIsAdmin(isAdminAuthenticated());
+    };
+    window.addEventListener(CONTENT_UPDATE_EVENT, handleUpdate);
+    return () => window.removeEventListener(CONTENT_UPDATE_EVENT, handleUpdate);
+  }, [subject.id, chapter.id]);
+
+  // Load natural theme settings from localStorage (Default: Warm Paper, Clean Sans, Medium size)
+  const [theme, setTheme] = useState<StudyTheme>(() => {
+    return sanitizeTheme(localStorage.getItem('ace12_theme'));
   });
-  const [font, setFont] = useState<'handwritten' | 'notebook' | 'sans'>(() => {
-    return (localStorage.getItem('ace12_font') as any) || 'handwritten';
+  const [font, setFont] = useState<StudyFont>(() => {
+    return sanitizeFont(localStorage.getItem('ace12_font'));
   });
-  const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg' | 'xl'>(() => {
-    return (localStorage.getItem('ace12_fontSize') as any) || 'md';
+  const [fontSize, setFontSize] = useState<StudyFontSize>(() => {
+    return sanitizeFontSize(localStorage.getItem('ace12_fontSize'));
   });
 
   useEffect(() => {
@@ -239,20 +661,20 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
   }, [fontSize]);
 
   const loadContent = useCallback(async (forceLiveSync = false) => {
-    if (!isUnlocked) return;
-    
     stopAudio();
 
     if (forceLiveSync) {
       setIsSyncingAI(true);
       setError(null);
       try {
-        let result = '';
-        if (view === 'notes') result = await generateDetailedNotes(subject.name, chapter.title);
-        else if (view === 'pyqs') result = await generatePremiumPYQs(subject.name, chapter.title);
-        setContent(result);
+        const [liveNotes, livePyqs] = await Promise.all([
+          generateDetailedNotes(subject.name, chapter.title, true),
+          generatePremiumPYQs(subject.name, chapter.title, true)
+        ]);
+        setNotesContent(liveNotes);
+        setPyqContent(livePyqs);
       } catch (e: any) {
-        setError(e.message || "Failed to sync live AI notes. Please check your internet connection.");
+        setError(e.message || "Failed to sync live AI notes. Loaded complete verified notes.");
       } finally {
         setIsSyncingAI(false);
       }
@@ -260,23 +682,22 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
       setIsLoading(true);
       setError(null);
       try {
-        let result = '';
-        if (view === 'notes') {
-          result = await getInstantNotes(subject.id, subject.name, chapter.title);
-        } else {
-          result = await getInstantPYQs(subject.id, subject.name, chapter.title);
-        }
-        setContent(result);
+        const [offlineNotes, offlinePyqs] = await Promise.all([
+          getInstantNotes(subject.id, subject.name, chapter.title, chapter.id),
+          getInstantPYQs(subject.id, subject.name, chapter.title, chapter.id)
+        ]);
+        setNotesContent(offlineNotes);
+        setPyqContent(offlinePyqs);
       } catch (e: any) {
-        setError("Error loading offline material.");
+        setError("Error loading study material.");
       } finally {
         setIsLoading(false);
       }
     }
-  }, [view, subject.id, subject.name, chapter.title, isUnlocked]);
+  }, [subject.id, subject.name, chapter.title, chapter.id]);
 
   useEffect(() => { 
-    loadContent(false); // Default to INSTANT, OFFLINE study material
+    loadContent(false);
   }, [loadContent]);
 
   const stopAudio = () => {
@@ -291,165 +712,112 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
       alert("Speech Synthesis is not supported in this browser.");
       return;
     }
+    stopAudio();
 
-    window.speechSynthesis.cancel(); // Cancel any current speech
+    const activeText = tabMode === 'pyqs' ? pyqContent : notesContent;
+    const cleanSpeech = activeText
+      .replace(/TOPIC:|QUESTION:|SOLUTION:|STEP \d+:|INSIGHT:|CBSE MARKING RUBRIC:/gi, '')
+      .replace(/[*#`_\-]/g, '')
+      .slice(0, 4000);
 
-    // Construct a beautiful, highly conversational "Human Teacher Lecture" script
-    let teacherScript = "";
+    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
     
-    if (view === 'notes') {
-      teacherScript += `Hello students! Today we are going to learn and revise the key concepts of the chapter: ${chapter.title} in Class 12 ${subject.name}, strictly following the latest 2026-27 CBSE pattern. `;
-      
-      const lines = content.split('\n');
-      lines.forEach(line => {
-        const raw = line.trim();
-        if (!raw) return;
-        
-        if (raw.toUpperCase().startsWith("TOPIC:")) {
-          const topicName = raw.substring(6).trim();
-          teacherScript += `Our next main topic is: ${topicName}. Pay close attention to this. `;
-        } else if (raw.toUpperCase().startsWith("INSIGHT:")) {
-          const insightText = raw.substring(8).trim();
-          teacherScript += `Please listen to this critical warning: ${insightText}. This is a frequent board trap! `;
-        } else if (!raw.toUpperCase().startsWith("QUESTION:") && !raw.toUpperCase().startsWith("SOLUTION:")) {
-          teacherScript += raw + " ";
-        }
-      });
-    } else {
-      teacherScript += `Hello students, let's go through the most important and frequently asked CBSE board questions for ${chapter.title}. I will explain the correct step-by-step answering method. `;
-      
-      const lines = content.split('\n');
-      let qNum = 1;
-      lines.forEach(line => {
-        const raw = line.trim();
-        if (!raw) return;
-
-        if (raw.toUpperCase().startsWith("QUESTION:")) {
-          teacherScript += `Question number ${qNum} is: ${raw.substring(9).replace(/Q\d+\.?/gi, '').trim()}. `;
-          qNum++;
-        } else if (raw.toUpperCase().startsWith("INSIGHT:")) {
-          const insightText = raw.substring(8).trim();
-          teacherScript += `Your teacher's advisory for this question is: ${insightText}. `;
-        } else if (raw.toUpperCase().startsWith("SOLUTION:")) {
-          teacherScript += `Let's understand the correct solution steps: ${raw.substring(9).trim()}. `;
-        }
-      });
-    }
-
-    const cleanSpeechScript = teacherScript
-      .replace(/\*\*|#/g, '')
-      .replace(/q\d+\.?\s*/gi, '')
-      .trim();
-
-    const utterance = new SpeechSynthesisUtterance(cleanSpeechScript);
-    
-    // Choose a friendly English voice
-    const voices = window.speechSynthesis.getVoices();
-    const optimalVoice = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('India') || v.name.includes('Heera') || v.name.includes('Rishi'))
-      || voices.find(v => v.lang.startsWith('en'))
-      || voices[0];
-
-    if (optimalVoice) {
-      utterance.voice = optimalVoice;
-    }
-
-    utterance.rate = 0.95; // Calm, comprehensible, real teacher speed
-    utterance.pitch = 1.05; // Slightly higher pitch for engaging, warm feel
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-    };
-
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-    };
-
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
   };
 
-  // Dynamically computed theme styles for whole viewing window
-  const getThemeClasses = () => {
-    if (theme === 'cream') {
-      return {
-        bg: 'bg-[#faf6ee] text-slate-800 transition-colors duration-500',
-        header: 'bg-[#faf6ee] border-[#e3d7bf] text-amber-950',
-        title: 'text-amber-950',
-        subtitle: 'text-amber-800/80',
-        asideBg: 'bg-[#f5ebd6] border-[#dfd1b3] text-amber-900',
-        buttonClass: 'bg-[#e3d7bf] hover:bg-[#d8ccb2] text-amber-950',
-        controlActive: 'bg-[#818cf8] text-white shadow-lg',
-        controlInactive: 'bg-[#e3d7bf]/40 text-[#6e5d48] hover:bg-[#e3d7bf]/80',
-      };
-    }
-    if (theme === 'chalkboard') {
-      return {
-        bg: 'bg-[#14231c] text-[#dcebe1] transition-colors duration-500',
-        header: 'bg-[#1b2f25]/90 border-[#264435] text-white',
-        title: 'text-white',
-        subtitle: 'text-emerald-300',
-        asideBg: 'bg-[#1a3227] border-[#294c3c] text-[#b4d1be]',
-        buttonClass: 'bg-[#294c3c] hover:bg-[#34624d] text-white',
-        controlActive: 'bg-emerald-500 text-white shadow-lg',
-        controlInactive: 'bg-[#294c3c]/50 text-emerald-300 hover:bg-[#294c3c]',
-      };
-    }
-    // midnight slate (default premium)
-    return {
-      bg: 'bg-[#020617] text-slate-300 transition-colors duration-500',
-      header: 'bg-slate-950/40 border-white/5 text-white',
-      title: 'text-white',
-      subtitle: 'text-slate-400',
-      asideBg: 'bg-indigo-600/5 border-indigo-500/10 text-slate-300',
-      buttonClass: 'bg-white/5 hover:bg-white/10 text-white',
-      controlActive: 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20',
-      controlInactive: 'bg-slate-900/60 text-slate-500 hover:text-white',
-    };
-  };
-
-  const styleConfig = getThemeClasses();
+  const activeTheme = sanitizeTheme(theme);
+  const themeContainerStyles = THEME_CONTAINER_STYLES[activeTheme] || THEME_CONTAINER_STYLES.paper;
+  const headerStyles = HEADER_STYLES[activeTheme] || HEADER_STYLES.paper;
+  const tabActiveStyle = TAB_ACTIVE_STYLES[activeTheme] || TAB_ACTIVE_STYLES.paper;
 
   return (
-    <div className={`flex flex-col h-full overflow-hidden min-w-0 ${styleConfig.bg}`}>
-      {/* Dynamic Header */}
-      <div className={`px-4 lg:px-12 py-4 lg:py-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 transition-colors duration-500 ${styleConfig.header}`}>
-        <div className="flex items-center gap-4 lg:gap-6">
-          <button onClick={onClose} className={`w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl flex items-center justify-center transition-all shrink-0 ${styleConfig.buttonClass}`}>←</button>
+    <div className={`flex flex-col h-full overflow-hidden min-w-0 ${themeContainerStyles}`}>
+      {/* Top Navigation Header */}
+      <div className={`px-4 lg:px-10 py-3.5 border-b flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0 backdrop-blur-md z-30 transition-colors ${headerStyles}`}>
+        <div className="flex items-center gap-3 lg:gap-4">
+          <button 
+            onClick={onClose} 
+            className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl border border-slate-300/60 dark:border-slate-700 flex items-center justify-center font-bold text-sm hover:bg-black/5 transition-all shrink-0"
+            title="Back to Chapters"
+          >
+            ←
+          </button>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[7px] lg:text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full ${isRevision ? 'bg-purple-500/20 text-purple-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
-                {isRevision ? 'Final Revision' : 'Module'}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                {isRevision ? 'Master Syllabus Revision' : 'Chapter Study Module'}
               </span>
-              <span className={`text-[7px] lg:text-[8px] font-bold uppercase tracking-widest ${styleConfig.subtitle}`}>{subject.name}</span>
+              <span className="text-[11px] font-bold opacity-70 uppercase tracking-wide">
+                {subject.name} • CBSE 2026-27
+              </span>
             </div>
-            <h2 className={`text-base lg:text-2xl font-black tracking-tighter leading-none line-clamp-1 ${styleConfig.title}`}>{chapter.title}</h2>
+            <h2 className="text-base lg:text-xl font-black tracking-tight line-clamp-1">
+              {chapter.title}
+            </h2>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          <div className={`flex p-1 rounded-xl lg:rounded-[1.5rem] border ${theme === 'cream' ? 'border-[#e3d7bf] bg-[#ede5d0]' : theme === 'chalkboard' ? 'border-[#264435] bg-[#12231b]' : 'border-white/5 bg-slate-900/60'} shadow-2xl shrink-0`}>
-            <button 
-              onClick={() => setView('notes')}
-              className={`px-4 lg:px-10 py-1.5 lg:py-3 rounded-lg lg:rounded-2xl text-[8px] lg:text-[11px] font-black uppercase tracking-widest transition-all ${view === 'notes' ? styleConfig.controlActive : 'text-slate-500 hover:text-white'}`}
+
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* Admin Edit Shortcut */}
+          {isAdmin && onOpenAdmin && (
+            <button
+              onClick={() => onOpenAdmin(subject.id, chapter.id)}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+              title="Edit notes, PYQs or upload book in Admin Portal"
             >
-              Study Notes
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit in Admin</span>
+            </button>
+          )}
+
+          {/* 5 Dedicated Study View Tabs */}
+          <div className="flex p-1 rounded-xl bg-black/5 dark:bg-white/5 border border-slate-300/60 dark:border-slate-700 overflow-x-auto no-scrollbar">
+            <button 
+              onClick={() => setTabMode('notes')}
+              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'notes' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+            >
+              📖 Notes & Theory
             </button>
             <button 
-              onClick={() => setView('pyqs')}
-              className={`px-4 lg:px-10 py-1.5 lg:py-3 rounded-lg lg:rounded-2xl text-[8px] lg:text-[11px] font-black uppercase tracking-widest transition-all ${view === 'pyqs' ? styleConfig.controlActive : 'text-slate-500 hover:text-white'}`}
+              onClick={() => setTabMode('formulas')}
+              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'formulas' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
             >
-              15Y PYQs
+              📑 Formula Vault
+            </button>
+            <button 
+              onClick={() => setTabMode('pyqs')}
+              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'pyqs' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+            >
+              {isRevision ? '🎯 15 Full PYQs' : '🎯 4-5 Solved PYQs'}
+            </button>
+            <button 
+              onClick={() => setTabMode('diagrams')}
+              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'diagrams' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+            >
+              🧪 Diagrams
+            </button>
+            <button 
+              onClick={() => setTabMode('books')}
+              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${tabMode === 'books' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Books & PDFs ({books.length})</span>
             </button>
           </div>
-          
+
+          {/* Voice Audio Reader */}
           <button 
             onClick={isSpeaking ? stopAudio : playAudio}
-            title={isSpeaking ? "Stop AI Reader" : "Play AI Reader"}
-            className={`w-10 h-10 lg:w-14 lg:h-14 flex items-center justify-center rounded-xl lg:rounded-2xl transition-all border shadow-2xl shrink-0 ${
-              isSpeaking ? 'bg-red-500 border-red-400 text-white animate-pulse' :
-              theme === 'cream'
-              ? 'bg-[#818cf8]/10 border-[#818cf8]/30 text-indigo-600 hover:bg-[#818cf8] hover:text-white'
-              : 'bg-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-600 hover:text-white'
+            title={isSpeaking ? "Stop Voice Lecture" : "Play Natural Audio Lecture"}
+            className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center rounded-xl border transition-all shrink-0 ${
+              isSpeaking 
+                ? 'bg-red-600 border-red-500 text-white animate-pulse' 
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20'
             }`}
           >
             {isSpeaking ? '■' : '🔊'}
@@ -457,273 +825,401 @@ const ChapterView: React.FC<{ chapter: Chapter; subject: Subject; onClose: () =>
         </div>
       </div>
 
-      {/* Customizable Eye-Comfort Reader Toolbar */}
-      {isUnlocked && !isLoading && !error && (
-        <div className={`px-4 lg:px-12 py-2.5 border-b flex flex-wrap items-center justify-between gap-4 text-xs shrink-0 select-none ${theme === 'cream' ? 'bg-[#ede5d0]/50 border-[#e3d7bf]/80' : theme === 'chalkboard' ? 'bg-[#1b2f25]/50 border-[#264435]/80' : 'bg-slate-900/30 border-white/5'}`}>
-          {/* Theme Selector */}
-          <div className="flex items-center gap-2">
-            <span className={`text-[9px] font-black uppercase tracking-wider ${theme === 'cream' ? 'text-amber-900/60' : theme === 'chalkboard' ? 'text-emerald-300/60' : 'text-slate-500'}`}>Theme:</span>
-            <div className="flex gap-1 bg-black/5 p-0.5 rounded-lg">
-              <button 
-                onClick={() => setTheme('cream')} 
-                title="Warm Cream Paper"
-                className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${theme === 'cream' ? 'bg-[#faf6ee] text-amber-950 shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              >
-                📜 Cream
-              </button>
-              <button 
-                onClick={() => setTheme('chalkboard')} 
-                title="Chalkboard Board"
-                className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${theme === 'chalkboard' ? 'bg-[#14231c] text-emerald-200 shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              >
-                🌿 Chalk
-              </button>
-              <button 
-                onClick={() => setTheme('midnight')} 
-                title="Midnight Slate"
-                className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${theme === 'midnight' ? 'bg-[#020617] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              >
-                🌙 Midnight
-              </button>
-            </div>
+      {/* Reader Controls Toolbar (Theme, Font, Size, AI Sync) */}
+      <div className="px-4 lg:px-10 py-2 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0 select-none bg-black/5 dark:bg-black/20">
+        {/* Theme Picker */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold opacity-70 text-[11px]">Theme:</span>
+          <div className="flex gap-1">
+            <button 
+              onClick={() => setTheme('paper')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${theme === 'paper' ? 'bg-amber-800 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+            >
+              📜 Warm Paper
+            </button>
+            <button 
+              onClick={() => setTheme('oxford')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${theme === 'oxford' ? 'bg-blue-700 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+            >
+              ☀️ Oxford Light
+            </button>
+            <button 
+              onClick={() => setTheme('slate')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${theme === 'slate' ? 'bg-slate-800 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+            >
+              🌙 Focus Slate
+            </button>
           </div>
-
-          {/* Font Selector */}
-          <div className="flex items-center gap-2">
-            <span className={`text-[9px] font-black uppercase tracking-wider ${theme === 'cream' ? 'text-amber-900/60' : theme === 'chalkboard' ? 'text-emerald-300/60' : 'text-slate-500'}`}>Font:</span>
-            <div className="flex gap-1 bg-black/5 p-0.5 rounded-lg">
-              <button 
-                onClick={() => setFont('handwritten')} 
-                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${font === 'handwritten' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              >
-                ✍️ Playpen
-              </button>
-              <button 
-                onClick={() => setFont('notebook')} 
-                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${font === 'notebook' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              >
-                📓 Kalam
-              </button>
-              <button 
-                onClick={() => setFont('sans')} 
-                className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${font === 'sans' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              >
-                ✏️ Clean
-              </button>
-            </div>
-          </div>
-
-          {/* Font Size */}
-          <div className="flex items-center gap-2">
-            <span className={`text-[9px] font-black uppercase tracking-wider ${theme === 'cream' ? 'text-amber-900/60' : theme === 'chalkboard' ? 'text-emerald-300/60' : 'text-slate-500'}`}>Size:</span>
-            <div className="flex bg-black/5 p-0.5 rounded-lg text-[9px] font-bold">
-              {(['sm', 'md', 'lg', 'xl'] as const).map(s => (
-                <button 
-                  key={s}
-                  onClick={() => setFontSize(s)}
-                  className={`px-2.5 py-1 rounded uppercase transition-all ${fontSize === s ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* AI Sync Button */}
-          <button 
-            disabled={isSyncingAI}
-            onClick={() => loadContent(true)}
-            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md ${
-              isSyncingAI 
-                ? 'bg-slate-800 text-slate-500 cursor-wait' 
-                : 'bg-indigo-600 text-white hover:bg-indigo-500 hover:scale-105 active:scale-95'
-            }`}
-          >
-            {isSyncingAI ? (
-              <>
-                <span className="w-2 h-2 rounded-full border border-t-transparent border-slate-400 animate-spin"></span>
-                Syncing AI...
-              </>
-            ) : (
-              '✨ Sync AI Notes'
-            )}
-          </button>
         </div>
-      )}
 
-      {/* Main Content Pane */}
-      <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
-        <div className="max-w-7xl mx-auto px-4 lg:px-12 py-6 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-10">
-          <div className="flex-1 min-w-0">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-[50vh] space-y-8">
-                <div className="relative">
-                  <div className="w-20 h-20 lg:w-32 lg:h-32 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                  <div className="absolute inset-0 flex items-center justify-center font-black text-[10px] text-indigo-400 uppercase tracking-widest animate-pulse">ACE</div>
-                </div>
-                <div className="text-center space-y-2">
-                  <p className={`font-black text-sm lg:text-xl uppercase tracking-tighter ${theme === 'cream' ? 'text-amber-950' : 'text-white'}`}>Assembling Revision Archives...</p>
-                  <p className="text-slate-500 text-[8px] font-bold uppercase tracking-[0.4em]">Optimizing Offline Database</p>
-                </div>
-              </div>
-            ) : error ? (
-              <div className={`p-10 lg:p-20 text-center rounded-[2rem] lg:rounded-[3rem] border ${theme === 'cream' ? 'bg-[#fdfbf7] border-[#e8dfcf]' : theme === 'chalkboard' ? 'bg-[#182e23] border-[#2b4c3d]' : 'premium-card'}`}>
-                <div className="text-3xl lg:text-6xl mb-6">⚠️</div>
-                <p className="text-red-400 font-black text-sm lg:text-xl uppercase tracking-tighter mb-6">{error}</p>
-                <button onClick={() => loadContent(true)} className="px-8 py-3.5 bg-indigo-600 text-white rounded-full font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">Force Live Sync</button>
-              </div>
-            ) : (
-              <AestheticNotebook 
-                content={content} 
-                subject={subject.name} 
-                isPyq={view === 'pyqs'} 
-                isRevision={isRevision} 
-                config={{ theme, font, size: fontSize }}
-              />
-            )}
+        {/* Font Family */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold opacity-70 text-[11px]">Font:</span>
+          <div className="flex gap-1">
+            <button 
+              onClick={() => setFont('sans')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${font === 'sans' ? 'bg-amber-800 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+            >
+              Clean Sans
+            </button>
+            <button 
+              onClick={() => setFont('serif')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold font-serif transition-all ${font === 'serif' ? 'bg-amber-800 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+            >
+              Serif Book
+            </button>
+            <button 
+              onClick={() => setFont('display')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${font === 'display' ? 'bg-amber-800 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+            >
+              Outfit Modern
+            </button>
           </div>
-          
-          {/* Sidebar Study Tips & Desk widgets */}
-          <aside className="w-full lg:w-48 shrink-0 hidden lg:block">
-            <div className="sticky top-10 space-y-8">
-              <div className={`p-6 rounded-[2rem] border transition-all duration-500 ${styleConfig.asideBg}`}>
-                <span className="text-[7px] font-black uppercase tracking-widest block mb-2 opacity-70">Study Guide</span>
-                <p className="text-[11px] font-bold leading-relaxed italic">
-                  Focus on "Insight" sections for direct examiner traps identified in our 15-year CBSE audit.
-                </p>
+        </div>
+
+        {/* Font Size */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold opacity-70 text-[11px]">Size:</span>
+          <div className="flex gap-1">
+            {(['sm', 'md', 'lg', 'xl'] as const).map(s => (
+              <button 
+                key={s}
+                onClick={() => setFontSize(s)}
+                className={`px-2 py-0.5 rounded text-[10px] font-black uppercase transition-all ${fontSize === s ? 'bg-amber-800 text-white shadow-sm' : 'opacity-70 hover:opacity-100'}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Sync Button */}
+        <button 
+          disabled={isSyncingAI}
+          onClick={() => loadContent(true)}
+          className={`px-3 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm ${
+            isSyncingAI 
+              ? 'bg-slate-700 text-slate-300 cursor-wait' 
+              : 'bg-amber-700 hover:bg-amber-800 text-white'
+          }`}
+        >
+          {isSyncingAI ? 'Syncing...' : '✨ Live AI Refresh'}
+        </button>
+      </div>
+
+      {/* Main Content Body */}
+      <div className="flex-1 overflow-y-auto scroll-smooth">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
+          {tabMode === 'books' ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-amber-600" />
+                    Offline Textbooks & PDF Books
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Uploaded NCERT, Reference Books, and Question Banks stored locally for instant offline reading.
+                  </p>
+                </div>
+                {isAdmin && onOpenAdmin && (
+                  <button
+                    onClick={() => onOpenAdmin(subject.id, chapter.id)}
+                    className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 shadow-sm"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Book PDF</span>
+                  </button>
+                )}
               </div>
+
+              {books.length === 0 ? (
+                <div className="p-12 text-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                  <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                  <p className="font-black text-base text-slate-800 dark:text-slate-200 mb-1">No PDF Books Uploaded Yet</p>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+                    Complete NCERT textbooks, question banks, and reference notes can be accessed offline once uploaded.
+                  </p>
+                  {isAdmin && onOpenAdmin && (
+                    <button
+                      onClick={() => onOpenAdmin(subject.id, chapter.id)}
+                      className="px-4 py-2 bg-amber-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Upload to this Chapter</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {books.map(book => (
+                    <div
+                      key={book.id}
+                      className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-amber-500 transition-all group"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                            {book.fileType.toUpperCase()} • {(book.fileSize / (1024 * 1024)).toFixed(1)} MB
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            {new Date(book.uploadDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-sm text-slate-900 dark:text-white line-clamp-2 mb-1 group-hover:text-amber-700 dark:group-hover:text-amber-400">
+                          {book.title}
+                        </h4>
+                        {book.author && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2">
+                            By {book.author}
+                          </p>
+                        )}
+                        {book.description && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                            {book.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <button
+                          onClick={() => setActiveViewerBook(book)}
+                          className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Read Offline</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </aside>
+          ) : isLoading ? (
+            <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+              <div className="w-12 h-12 border-4 border-amber-600/30 border-t-amber-600 rounded-full animate-spin"></div>
+              <p className="font-bold text-sm">Opening Complete Study Material...</p>
+            </div>
+          ) : error ? (
+            <div className="p-8 text-center rounded-2xl border border-red-300 bg-red-50 text-red-900">
+              <p className="font-black text-base mb-4">{error}</p>
+              <button 
+                onClick={() => loadContent(true)}
+                className="px-5 py-2 bg-amber-800 text-white font-bold text-xs rounded-xl shadow-md"
+              >
+                Retry Live AI Sync
+              </button>
+            </div>
+          ) : (
+            <NaturalNotebookViewer 
+              content={notesContent} 
+              pyqContent={pyqContent}
+              subject={subject.name}
+              tabMode={tabMode}
+              isRevision={isRevision}
+              config={{ theme, font, size: fontSize }}
+              onSelectTab={(tab) => setTabMode(tab)}
+            />
+          )}
         </div>
       </div>
+
+      {/* Embedded PDF Viewer Modal */}
+      {activeViewerBook && (
+        <PDFViewerModal book={activeViewerBook} onClose={() => setActiveViewerBook(null)} />
+      )}
     </div>
   );
 };
 
-const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ subject, searchQuery = '', selectedChapter, setSelectedChapter }) => {
+// Main Subject Dashboard
+const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ 
+  subject, 
+  searchQuery = '', 
+  selectedChapter, 
+  setSelectedChapter,
+  onOpenAdmin 
+}) => {
+  const [subjectBooks, setSubjectBooks] = useState<UploadedBook[]>([]);
+  const [selectedBook, setSelectedBook] = useState<UploadedBook | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const all = await getAllBooks();
+        setSubjectBooks(all.filter(b => b.subjectId === subject.id));
+      } catch (e) {
+        console.error("Failed to load subject books", e);
+      }
+    };
+    fetchBooks();
+
+    const handleUpdate = () => {
+      fetchBooks();
+      setIsAdmin(isAdminAuthenticated());
+    };
+    window.addEventListener(CONTENT_UPDATE_EVENT, handleUpdate);
+    return () => window.removeEventListener(CONTENT_UPDATE_EVENT, handleUpdate);
+  }, [subject.id]);
+
   const filteredChapters = subject.chapters.filter(ch => 
     ch.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ch.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (selectedChapter) {
-    return <ChapterView chapter={selectedChapter} subject={subject} onClose={() => setSelectedChapter(null)} />;
+    return (
+      <ChapterView 
+        chapter={selectedChapter} 
+        subject={subject} 
+        onClose={() => setSelectedChapter(null)} 
+        onOpenAdmin={onOpenAdmin}
+      />
+    );
   }
 
   return (
-    <div className="p-4 lg:p-10 max-w-7xl mx-auto w-full animate-in fade-in duration-700 h-full flex flex-col">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 lg:mb-16 shrink-0 px-2 lg:px-0">
-        <div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/5 rounded-2xl lg:rounded-[2rem] border border-white/10 flex items-center justify-center text-3xl lg:text-4xl shadow-2xl">{subject.icon}</div>
-            <div>
-              <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tighter">{subject.name}</h1>
-              <p className="text-slate-500 text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.4em] mt-1 lg:mt-2">Premium 2026 Board Archive</p>
-            </div>
+    <div className="p-4 lg:p-10 max-w-7xl mx-auto w-full animate-in fade-in duration-500 h-full flex flex-col overflow-y-auto">
+      {/* Subject Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl shadow-sm">
+            {subject.icon}
           </div>
-          <div className="flex flex-wrap gap-2 lg:gap-3">
-             <div className="px-3 lg:px-4 py-1.5 lg:py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[8px] lg:text-[9px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span> 4250+ PYQs Analyzed
-             </div>
-             <div className="px-3 lg:px-4 py-1.5 lg:py-2 bg-purple-500/10 border border-purple-500/20 rounded-full text-[8px] lg:text-[9px] font-black text-purple-400 uppercase tracking-widest">
-               Latest 2026 Syllabus
-             </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                CBSE Class 12 (2026-27)
+              </span>
+              <span className="text-xs opacity-70 font-semibold">• 100% NCERT Aligned</span>
+              {subject.isCustom && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300">
+                  Custom Added
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl lg:text-4xl font-black tracking-tight">{subject.name}</h1>
           </div>
         </div>
-        
-        <div className="hidden lg:flex flex-col items-end gap-2 p-4 bg-slate-900/30 rounded-2xl border border-white/5">
-          <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Key Status</span>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <span className="block text-white font-black text-sm tracking-tighter leading-none">{getActiveKeyCount()} Active</span>
-              <span className="text-[8px] font-bold text-indigo-400 uppercase">Pool Capacity</span>
-            </div>
-            <div className="w-[1px] h-6 bg-white/5"></div>
-            <div className="text-right">
-              <span className="block text-white font-black text-sm tracking-tighter leading-none">#{getCurrentKeyIndex()}</span>
-              <span className="text-[8px] font-bold text-slate-500 uppercase">Index</span>
-            </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="px-4 py-2 bg-slate-900/5 dark:bg-white/5 border border-slate-300/50 dark:border-slate-800 rounded-xl text-xs font-bold flex items-center gap-2">
+            <span>📚</span>
+            <span>{subject.chapters.length} Modules & Revision</span>
           </div>
-          {getLastRotationReason() && (
-            <div className="mt-2 text-[7px] font-black text-amber-500 uppercase tracking-widest animate-pulse">
-              Rotated: {getLastRotationReason()}
-            </div>
+
+          <div className="px-4 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold flex items-center gap-2">
+            <span>📖</span>
+            <span>{subjectBooks.length} Offline PDF Books</span>
+          </div>
+
+          {isAdmin && onOpenAdmin && (
+            <button
+              onClick={() => onOpenAdmin(subject.id)}
+              className="px-4 py-2 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-600" />
+              <span>Admin Manage</span>
+            </button>
           )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-24 px-2 lg:px-0">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8 px-2 lg:px-0">
-            {filteredChapters.map((chapter) => (
+      {/* Offline Books Quick Shelf (if any books exist) */}
+      {subjectBooks.length > 0 && (
+        <div className="mb-8 p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-300 flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              <span>Offline Books & PDF Reference Library ({subjectBooks.length})</span>
+            </h3>
+            {isAdmin && onOpenAdmin && (
               <button
-                key={chapter.id}
-                onClick={() => setSelectedChapter(chapter)}
-                className={`group relative text-left p-6 lg:p-10 rounded-[2.5rem] lg:rounded-[3.5rem] transition-all duration-500 border border-white/5 flex flex-col justify-between h-auto lg:h-[320px] overflow-hidden ${
-                  chapter.id.includes('_rev') 
-                    ? 'bg-gradient-to-br from-purple-600/20 via-slate-900/40 to-slate-950 border-purple-500/20 hover:border-purple-500/40' 
-                    : 'bg-slate-900/20 hover:bg-slate-900/40 hover:border-indigo-500/20'
-                }`}
+                onClick={() => onOpenAdmin(subject.id)}
+                className="text-xs font-bold text-amber-800 dark:text-amber-400 hover:underline flex items-center gap-1"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-all duration-700"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4 lg:mb-6">
-                    <span className={`text-[8px] lg:text-[9px] font-black uppercase tracking-[0.4em] ${chapter.id.includes('_rev') ? 'text-purple-400' : 'text-indigo-400'}`}>
-                      {chapter.id.includes('_rev') ? 'Mastery Pack' : 'Module ' + chapter.id.replace(/[a-z]/gi, '')}
-                    </span>
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white/5 rounded-xl flex items-center justify-center text-white/20 group-hover:text-white transition-colors duration-500">→</div>
-                  </div>
-                  <h3 className="text-lg lg:text-2xl font-black text-white tracking-tighter leading-tight mb-3 lg:mb-4 group-hover:translate-x-1 transition-transform duration-500">{chapter.title}</h3>
-                  <p className="text-slate-500 text-[11px] lg:text-[12px] font-medium leading-relaxed line-clamp-2">{chapter.description}</p>
+                <span>Manage in Admin</span>
+                <span>→</span>
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {subjectBooks.map(book => (
+              <button
+                key={book.id}
+                onClick={() => setSelectedBook(book)}
+                className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-slate-800 text-left hover:border-amber-500 transition-all shadow-xs flex items-center gap-3 group"
+              >
+                <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 flex items-center justify-center font-black text-xs shrink-0">
+                  PDF
                 </div>
-
-                <div className="mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
-                  <div className="flex gap-4 lg:gap-6">
-                    <div className="flex flex-col">
-                      <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Notes</span>
-                      <span className="text-[9px] font-bold text-white uppercase">Premium</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">PYQs</span>
-                      <span className="text-[9px] font-bold text-white uppercase">Analysed</span>
-                    </div>
-                  </div>
-                  <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${chapter.id.includes('_rev') ? 'bg-purple-500/10 text-purple-400' : 'bg-white/5 text-slate-500'}`}>
-                    Start Learning
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-black text-slate-900 dark:text-white truncate group-hover:text-amber-700">
+                    {book.title}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 truncate">
+                    {book.author ? `By ${book.author}` : `${(book.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                  </p>
                 </div>
               </button>
             ))}
           </div>
-
-          <aside className="w-full lg:w-[220px] shrink-0 space-y-8 hidden lg:block">
-            <div className="premium-card p-6 rounded-[2rem] bg-indigo-600/5 border-indigo-500/10">
-              <span className="text-[7px] font-black text-indigo-400 uppercase tracking-widest block mb-4">Preparation Progress</span>
-              <div className="space-y-4">
-                 <div>
-                   <div className="flex justify-between text-[9px] font-bold text-slate-300 mb-2 uppercase">
-                     <span>Notes Completed</span>
-                     <span>0%</span>
-                   </div>
-                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                     <div className="w-0 h-full bg-indigo-500 rounded-full"></div>
-                   </div>
-                 </div>
-                 <div>
-                   <div className="flex justify-between text-[9px] font-bold text-slate-300 mb-2 uppercase">
-                     <span>PYQ Mastery</span>
-                     <span>0%</span>
-                   </div>
-                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                     <div className="w-0 h-full bg-purple-500 rounded-full"></div>
-                   </div>
-                 </div>
-              </div>
-            </div>
-          </aside>
         </div>
+      )}
+
+      {/* Chapter Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-20">
+        {filteredChapters.map((chapter) => {
+          const isRev = chapter.id.includes('_rev');
+          return (
+            <button
+              key={chapter.id}
+              onClick={() => setSelectedChapter(chapter)}
+              className={`group text-left p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between h-[230px] relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+                isRev 
+                  ? 'bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-slate-900/10 dark:to-slate-900 border-amber-500/40 hover:border-amber-500' 
+                  : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-amber-500/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
+                    isRev 
+                      ? 'bg-amber-600 text-white' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {isRev ? '⭐ Master Revision & 15 PYQs' : `Chapter ${chapter.id.replace(/[a-z_]/gi, '') || 'Module'}`}
+                  </span>
+                  <span className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 font-black text-sm transition-colors">
+                    Open →
+                  </span>
+                </div>
+                <h3 className="text-base lg:text-lg font-black tracking-tight leading-snug mb-2 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+                  {chapter.title}
+                </h3>
+                <p className="text-xs opacity-75 font-medium line-clamp-2 leading-relaxed">
+                  {chapter.description}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-bold opacity-80">
+                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                  <span>📖 Complete Notes</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                  <span>{isRev ? '🎯 15 Solved PYQs' : '🎯 4-5 Solved PYQs'}</span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
+
+      {/* PDF Modal in Dashboard View */}
+      {selectedBook && (
+        <PDFViewerModal book={selectedBook} onClose={() => setSelectedBook(null)} />
+      )}
     </div>
   );
 };
