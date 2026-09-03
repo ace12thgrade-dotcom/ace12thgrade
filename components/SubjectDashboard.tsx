@@ -3,8 +3,20 @@ import { Subject, Chapter, UploadedBook } from '../types.ts';
 import { generateDetailedNotes, generatePremiumPYQs, getActiveKeyCount, getCurrentKeyIndex } from '../services/geminiService.ts';
 import { getInstantNotes, getInstantPYQs } from '../services/offlineNotesService.ts';
 import { getAllBooks, isAdminAuthenticated, CONTENT_UPDATE_EVENT } from '../services/contentStore.ts';
+import { 
+  StudyItem, 
+  StudySection, 
+  CanonicalChapterNotes, 
+  normalizeToCanonicalNotes, 
+  cleanMathAndSymbols 
+} from '../services/notesParser.ts';
 import PDFViewerModal from './PDFViewerModal.tsx';
-import { BookOpen, FileText, Upload, Plus, ShieldCheck, Edit3, Download, Eye, Layers } from 'lucide-react';
+import TeacherReaderModal from './TeacherReaderModal.tsx';
+import { synthesizeTeacherLecture } from '../services/teacherReaderService.ts';
+import { FormulaCard, FormulaData } from './FormulaCard.tsx';
+import { TextbookDiagram, DiagramType } from './TextbookDiagram.tsx';
+import { getFormulasForChapter } from '../services/formulaVaultService.ts';
+import { BookOpen, FileText, Upload, Plus, ShieldCheck, Edit3, Download, Eye, Layers, Headphones, Sparkles, Volume2 } from 'lucide-react';
 
 interface SubjectDashboardProps {
   subject: Subject;
@@ -37,44 +49,62 @@ export const sanitizeFontSize = (val: unknown): StudyFontSize => {
 const THEME_CLASSES = {
   paper: {
     card: 'bg-white border-[#e7ded1] shadow-sm hover:shadow-md text-slate-800',
-    badge: 'bg-amber-100 text-amber-900 border border-amber-200/80 font-bold',
-    title: 'text-amber-950 font-black',
-    subtopic: 'text-amber-950 bg-[#faf6ed] border-l-4 border-l-amber-600 px-4 py-2.5 rounded-r-xl font-bold shadow-xs',
-    insight: 'bg-[#fef9ee] border border-amber-300/80 text-amber-950 shadow-xs',
-    solution: 'bg-[#f8fafc] border-l-4 border-l-indigo-600 border border-slate-200 text-slate-900 shadow-xs',
-    stepBadge: 'bg-indigo-100 text-indigo-900 border border-indigo-200 font-black',
-    rubricBox: 'bg-emerald-50/80 border border-emerald-300/80 text-emerald-950 shadow-xs',
+    badge: 'bg-gradient-to-br from-amber-700 to-amber-900 text-white shadow-sm font-black',
+    title: 'text-amber-950 font-black tracking-tight',
+    subtopic: 'text-amber-950 bg-gradient-to-r from-amber-100/90 via-amber-50/60 to-transparent border-l-4 border-l-amber-600 border-y border-r border-amber-200/60 px-4 py-3 rounded-r-2xl font-black text-sm lg:text-base tracking-tight shadow-xs',
+    insight: 'bg-gradient-to-r from-amber-50 via-yellow-50/60 to-orange-50/30 border-2 border-amber-400/90 text-amber-950 shadow-sm rounded-2xl',
+    solution: 'bg-[#f8fafc] border-l-4 border-l-indigo-600 border border-slate-200 text-slate-900 shadow-xs rounded-r-2xl',
+    stepBadge: 'bg-indigo-100 text-indigo-900 border border-indigo-300 font-black',
+    rubricBox: 'bg-emerald-50/90 border-2 border-emerald-400/90 text-emerald-950 shadow-xs rounded-2xl',
     codeBg: 'bg-slate-900 text-emerald-300',
-    formulaBox: 'bg-amber-50/70 border border-amber-300/80 rounded-2xl p-4 text-amber-950 shadow-xs',
-    diagramBox: 'bg-indigo-50/50 border border-indigo-200 rounded-2xl p-4 text-indigo-950',
+    formulaBox: 'bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-50/20 border-2 border-amber-400/90 rounded-2xl p-5 text-amber-950 shadow-sm',
+    diagramBox: 'bg-indigo-50/50 border border-indigo-200 rounded-2xl p-5 text-indigo-950',
+    definitionBox: 'bg-[#faf6ed] border-l-4 border-l-amber-700 border border-amber-200/80 rounded-r-2xl p-5 text-amber-950 shadow-xs',
+    derivationBox: 'bg-indigo-50/40 border-2 border-indigo-200/90 rounded-2xl p-5 text-slate-900 shadow-xs',
+    exampleBox: 'bg-blue-50/50 border-2 border-blue-200/90 rounded-2xl p-5 text-slate-900 shadow-xs',
+    applicationBox: 'bg-teal-50/50 border border-teal-300/80 rounded-2xl p-5 text-teal-950 shadow-xs',
+    keypointsBox: 'bg-purple-50/50 border border-purple-300/80 rounded-2xl p-5 text-purple-950 shadow-xs',
+    bulletItem: 'text-slate-800',
     text: 'text-slate-800',
   },
   oxford: {
     card: 'bg-white border-slate-200 shadow-sm hover:shadow-md text-slate-900',
-    badge: 'bg-blue-100 text-blue-900 border border-blue-200 font-bold',
-    title: 'text-slate-900 font-black',
-    subtopic: 'text-slate-900 bg-slate-50 border-l-4 border-l-blue-600 px-4 py-2.5 rounded-r-xl font-bold shadow-xs',
-    insight: 'bg-blue-50/80 border border-blue-200 text-blue-950 shadow-xs',
-    solution: 'bg-slate-50 border-l-4 border-l-emerald-600 border border-slate-200 text-slate-900 shadow-xs',
-    stepBadge: 'bg-blue-100 text-blue-900 border border-blue-200 font-black',
-    rubricBox: 'bg-emerald-50/80 border border-emerald-200 text-emerald-950 shadow-xs',
+    badge: 'bg-gradient-to-br from-blue-700 to-indigo-800 text-white shadow-sm font-black',
+    title: 'text-slate-900 font-black tracking-tight',
+    subtopic: 'text-slate-900 bg-gradient-to-r from-blue-100/90 via-blue-50/60 to-transparent border-l-4 border-l-blue-600 border-y border-r border-blue-200/60 px-4 py-3 rounded-r-2xl font-black text-sm lg:text-base tracking-tight shadow-xs',
+    insight: 'bg-gradient-to-r from-blue-50 via-indigo-50/60 to-transparent border-2 border-blue-300 text-blue-950 shadow-sm rounded-2xl',
+    solution: 'bg-slate-50 border-l-4 border-l-emerald-600 border border-slate-200 text-slate-900 shadow-xs rounded-r-2xl',
+    stepBadge: 'bg-blue-100 text-blue-900 border border-blue-300 font-black',
+    rubricBox: 'bg-emerald-50/90 border-2 border-emerald-300 text-emerald-950 shadow-xs rounded-2xl',
     codeBg: 'bg-slate-950 text-sky-300',
-    formulaBox: 'bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-900 shadow-xs',
-    diagramBox: 'bg-sky-50/60 border border-sky-200 rounded-2xl p-4 text-slate-900',
+    formulaBox: 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 border-2 border-blue-300 rounded-2xl p-5 text-slate-900 shadow-sm',
+    diagramBox: 'bg-sky-50/60 border border-sky-200 rounded-2xl p-5 text-slate-900',
+    definitionBox: 'bg-blue-50/40 border-l-4 border-l-blue-700 border border-blue-200 rounded-r-2xl p-5 text-slate-900 shadow-xs',
+    derivationBox: 'bg-slate-50 border-2 border-slate-300 rounded-2xl p-5 text-slate-900 shadow-xs',
+    exampleBox: 'bg-indigo-50/50 border-2 border-indigo-200 rounded-2xl p-5 text-slate-900 shadow-xs',
+    applicationBox: 'bg-cyan-50/50 border border-cyan-300 rounded-2xl p-5 text-cyan-950 shadow-xs',
+    keypointsBox: 'bg-indigo-50/50 border border-indigo-300 rounded-2xl p-5 text-slate-900 shadow-xs',
+    bulletItem: 'text-slate-800',
     text: 'text-slate-800',
   },
   slate: {
     card: 'bg-slate-900/90 border-slate-800 shadow-md text-slate-200',
-    badge: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold',
-    title: 'text-white font-black',
-    subtopic: 'text-indigo-200 bg-slate-800/80 border-l-4 border-l-indigo-500 px-4 py-2.5 rounded-r-xl font-bold shadow-xs',
-    insight: 'bg-indigo-950/40 border border-indigo-800/50 text-indigo-200 shadow-xs',
-    solution: 'bg-slate-800/60 border-l-4 border-l-emerald-500 border border-slate-700/50 text-slate-200 shadow-xs',
+    badge: 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-sm font-black',
+    title: 'text-white font-black tracking-tight',
+    subtopic: 'text-indigo-200 bg-gradient-to-r from-slate-800 via-slate-800/80 to-transparent border-l-4 border-l-indigo-500 border-y border-r border-slate-700 px-4 py-3 rounded-r-2xl font-black text-sm lg:text-base tracking-tight shadow-xs',
+    insight: 'bg-gradient-to-r from-amber-950/40 via-yellow-950/20 to-slate-900 border-2 border-amber-500/70 text-amber-200 shadow-sm rounded-2xl',
+    solution: 'bg-slate-800/60 border-l-4 border-l-emerald-500 border border-slate-700/50 text-slate-200 shadow-xs rounded-r-2xl',
     stepBadge: 'bg-indigo-900/80 text-indigo-200 border border-indigo-700/50 font-black',
-    rubricBox: 'bg-emerald-950/40 border border-emerald-800/50 text-emerald-200 shadow-xs',
+    rubricBox: 'bg-emerald-950/40 border-2 border-emerald-700/70 text-emerald-200 shadow-xs rounded-2xl',
     codeBg: 'bg-black/80 text-indigo-300',
-    formulaBox: 'bg-slate-800/60 border border-slate-700 rounded-2xl p-4 text-slate-200 shadow-xs',
-    diagramBox: 'bg-slate-800/40 border border-slate-700 rounded-2xl p-4 text-slate-200',
+    formulaBox: 'bg-gradient-to-br from-slate-900 via-amber-950/30 to-slate-900 border-2 border-amber-500/70 rounded-2xl p-5 text-amber-200 shadow-sm',
+    diagramBox: 'bg-slate-800/40 border border-slate-700 rounded-2xl p-5 text-slate-200',
+    definitionBox: 'bg-slate-800/80 border-l-4 border-l-amber-500 border border-slate-700 rounded-r-2xl p-5 text-amber-200 shadow-xs',
+    derivationBox: 'bg-slate-800/50 border-2 border-indigo-900/70 rounded-2xl p-5 text-slate-200 shadow-xs',
+    exampleBox: 'bg-blue-950/40 border-2 border-blue-800/60 rounded-2xl p-5 text-blue-200 shadow-xs',
+    applicationBox: 'bg-teal-950/40 border border-teal-800/60 rounded-2xl p-5 text-teal-200 shadow-xs',
+    keypointsBox: 'bg-purple-950/40 border border-purple-800/60 rounded-2xl p-5 text-purple-200 shadow-xs',
+    bulletItem: 'text-slate-300',
     text: 'text-slate-300',
   }
 };
@@ -103,24 +133,11 @@ export interface NotebookConfig {
   size?: StudyFontSize;
 }
 
-interface SectionItem {
-  type: 'text' | 'subtopic' | 'code' | 'insight' | 'solution' | 'step' | 'formula' | 'rubric' | 'diagram';
-  text: string;
-  lang?: string;
-  marks?: string;
-  year?: string;
-}
-
-interface ParsedSection {
-  title: string;
-  tag?: 'formula' | 'notes' | 'pyq' | 'diagram' | 'general';
-  marks?: string;
-  year?: string;
-  items: SectionItem[];
-}
+export type ParsedSection = StudySection;
+export type SectionItem = StudyItem;
 
 // Helper to render bold markdown (**text**), formulas, and highlight keywords
-const renderFormattedText = (text: string, theme?: StudyTheme) => {
+export const renderFormattedText = (text: string, theme?: StudyTheme) => {
   if (!text) return null;
 
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -128,15 +145,52 @@ const renderFormattedText = (text: string, theme?: StudyTheme) => {
   return parts.map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       const innerText = part.slice(2, -2);
+      const isEquation = innerText.includes('=') || innerText.includes('+') || innerText.includes('·') || innerText.includes('^') || innerText.includes('/');
+      const isHeaderLabel = innerText.endsWith(':') || innerText.startsWith('Step') || innerText.startsWith('Q') || innerText.length < 30;
+
+      if (isEquation) {
+        return (
+          <span 
+            key={index} 
+            className={`font-mono font-black px-1.5 py-0.5 rounded-md text-[0.95em] tracking-tight ${
+              theme === 'paper'
+                ? 'bg-amber-100/80 text-amber-950 border border-amber-300/70'
+                : theme === 'oxford'
+                ? 'bg-blue-100/80 text-blue-950 border border-blue-300/70'
+                : 'bg-indigo-950/80 text-amber-300 border border-amber-500/40'
+            }`}
+          >
+            {innerText}
+          </span>
+        );
+      }
+
+      if (isHeaderLabel) {
+        return (
+          <strong 
+            key={index} 
+            className={`font-black tracking-tight ${
+              theme === 'paper'
+                ? 'text-amber-950 font-black'
+                : theme === 'oxford'
+                ? 'text-slate-950 font-black'
+                : 'text-amber-300 font-black'
+            }`}
+          >
+            {innerText}
+          </strong>
+        );
+      }
+
       return (
         <strong 
           key={index} 
           className={`font-black tracking-tight ${
             theme === 'paper'
-              ? 'text-amber-950 font-black'
+              ? 'text-amber-950'
               : theme === 'oxford'
-              ? 'text-slate-950 font-black'
-              : 'text-white font-black'
+              ? 'text-slate-950'
+              : 'text-white'
           }`}
         >
           {innerText}
@@ -147,181 +201,100 @@ const renderFormattedText = (text: string, theme?: StudyTheme) => {
   });
 };
 
-// Parser to split raw content into clean human-readable study blocks
-const parseStudyContent = (rawContent: string, isPyq?: boolean, isRevision?: boolean): ParsedSection[] => {
-  const lines = rawContent.split('\n');
-  const parsedSections: ParsedSection[] = [];
-  let currentSection: ParsedSection | null = null;
-  
-  let inCodeBlock = false;
-  let codeLines: string[] = [];
-  let codeLang = '';
+// Unified Canonical Parser: seamlessly normalizes JSON, Markdown, and AI/Admin content into canonical StudySection[]
+export const parseStudyContent = (rawContent: string, isPyq?: boolean, isRevision?: boolean): ParsedSection[] => {
+  const canonical = normalizeToCanonicalNotes(rawContent, { isPyq, isRevision });
+  return canonical.sections;
+};
 
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const trimmed = rawLine.trim();
+// Maps diagram requests to authentic textbook diagrams
+export const resolveDiagramType = (item: SectionItem, sectionTitle: string): DiagramType | null => {
+  if (item.diagramType) {
+    const dt = item.diagramType.toLowerCase();
+    if (dt.includes('prism')) return 'prism_refraction';
+    if (dt.includes('lens')) return 'lens_maker';
+    if (dt.includes('dipole')) return 'electric_dipole';
+    if (dt.includes('wheatstone') || dt.includes('bridge')) return 'wheatstone_bridge';
+    if (dt.includes('young') || dt.includes('slit') || dt.includes('ydse')) return 'youngs_double_slit';
+    if (dt.includes('cfse') || dt.includes('crystal') || dt.includes('octahedral')) return 'cfse_octahedral';
+    if (dt.includes('fixture') || dt.includes('knockout') || dt.includes('tournament')) return 'knockout_fixture_11';
+    if (dt.includes('junction') || dt.includes('diode')) return 'pn_junction';
+  }
 
-    // Code Block Boundary
-    if (trimmed.startsWith('```')) {
-      if (inCodeBlock) {
-        if (currentSection) {
-          currentSection.items.push({
-            type: 'code',
-            text: codeLines.join('\n'),
-            lang: codeLang
-          });
+  const combined = `${item.text} ${sectionTitle}`.toLowerCase();
+  if (combined.includes('prism formula') || (combined.includes('prism') && combined.includes('refraction'))) return 'prism_refraction';
+  if (combined.includes('lens maker') || combined.includes("lens maker's")) return 'lens_maker';
+  if (combined.includes('crystal field') || combined.includes('cfse') || combined.includes('octahedral field') || combined.includes('octahedral complex')) return 'cfse_octahedral';
+  if (combined.includes('fixture') && (combined.includes('11 teams') || combined.includes('knock-out') || combined.includes('knockout'))) return 'knockout_fixture_11';
+  if (combined.includes('electric dipole') && (combined.includes('field') || combined.includes('axial') || combined.includes('equatorial'))) return 'electric_dipole';
+  if (combined.includes('wheatstone bridge') || combined.includes('meter bridge')) return 'wheatstone_bridge';
+  if (combined.includes('young') && (combined.includes('double slit') || combined.includes('interference'))) return 'youngs_double_slit';
+  if (combined.includes('p-n junction') || combined.includes('pn junction') || combined.includes('depletion layer')) return 'pn_junction';
+
+  return null;
+};
+
+// Converts text into standardized FormulaCard data
+export const parseFormulaItemToData = (text: string, title?: string): FormulaData => {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  let equation = lines[0] || text;
+  let formulaTitle = title || 'Important Formula';
+
+  const colonIdx = equation.indexOf(':');
+  if (colonIdx > 0 && colonIdx < 35) {
+    formulaTitle = equation.substring(0, colonIdx).trim();
+    equation = equation.substring(colonIdx + 1).trim();
+  }
+
+  const variables: { symbol: string; meaning: string; unit?: string }[] = [];
+  let whenToApply = '';
+  let trap = '';
+
+  lines.slice(1).forEach(l => {
+    if (l.toLowerCase().includes('when to apply') || l.toLowerCase().includes('condition')) {
+      whenToApply = l.replace(/^[-*•]?\s*(when to apply|conditions?):?/i, '').trim();
+    } else if (l.toLowerCase().includes('trap') || l.toLowerCase().includes('mistake') || l.toLowerCase().includes('caution')) {
+      trap = l.replace(/^[-*•]?\s*(examiner trap|caution|common mistake|note):?/i, '').trim();
+    } else if (l.includes('=') || l.includes(':')) {
+      const clean = l.replace(/^[-*•]\s*/, '');
+      const parts = clean.split(/=|:/);
+      if (parts.length >= 2) {
+        const sym = parts[0].trim();
+        const meaningPart = parts.slice(1).join('=').trim();
+        let unit: string | undefined = undefined;
+        const uMatch = meaningPart.match(/\(([^)]+)\)$/);
+        if (uMatch) {
+          unit = uMatch[1];
         }
-        inCodeBlock = false;
-        codeLines = [];
-        codeLang = '';
-      } else {
-        inCodeBlock = true;
-        codeLang = trimmed.substring(3).trim();
+        variables.push({
+          symbol: sym,
+          meaning: meaningPart.replace(/\(([^)]+)\)$/, '').trim(),
+          unit
+        });
       }
-      continue;
     }
+  });
 
-    if (inCodeBlock) {
-      codeLines.push(rawLine);
-      continue;
-    }
-
-    if (!trimmed) continue;
-    
-    // Skip divider clutter
-    if (/^[\|=_\-\s*●·○#]+$/.test(trimmed) && trimmed.length > 3) continue;
-
-    let scrubbed = trimmed.replace(/^(\|)+|(\|)+$/g, '').trim();
-    if (!scrubbed) continue;
-
-    const upper = scrubbed.toUpperCase();
-
-    // Major Section Header triggers
-    const isMajorSection = 
-      upper.startsWith('TOPIC:') || 
-      upper.startsWith('QUESTION:') || 
-      upper.startsWith('Q:') ||
-      upper.startsWith('Q1.') ||
-      upper.startsWith('Q2.') ||
-      upper.startsWith('Q3.') ||
-      upper.startsWith('Q4.') ||
-      upper.startsWith('Q5.') ||
-      upper.startsWith('Q6.') ||
-      upper.startsWith('Q7.') ||
-      upper.startsWith('Q8.') ||
-      upper.startsWith('Q9.') ||
-      upper.startsWith('Q10.') ||
-      upper.startsWith('Q11.') ||
-      upper.startsWith('Q12.') ||
-      upper.startsWith('Q13.') ||
-      upper.startsWith('Q14.') ||
-      upper.startsWith('Q15.') ||
-      (trimmed.startsWith('# ') && !trimmed.startsWith('### ')) ||
-      (trimmed.startsWith('## ') && !trimmed.startsWith('### '));
-
-    if (isMajorSection) {
-      if (currentSection) {
-        parsedSections.push(currentSection);
-      }
-
-      let cleanTitle = scrubbed.replace(/^TOPIC:|^QUESTION:|^Q:|^#+|^Q\d+\.\s*/gi, '').replace(/\*\*/g, '').trim();
-      
-      let sectionTag: ParsedSection['tag'] = 'notes';
-      if (upper.includes('FORMULA') || upper.includes('BLUEPRINT')) {
-        sectionTag = 'formula';
-      } else if (upper.includes('QUESTION') || upper.includes('MARKS') || upper.startsWith('Q') || isPyq) {
-        sectionTag = 'pyq';
-      } else if (upper.includes('DIAGRAM') || upper.includes('SCHEMATIC') || upper.includes('FIGURE')) {
-        sectionTag = 'diagram';
-      }
-
-      // Extract marks badge if available e.g. [5 Marks, Delhi 2024]
-      let marksMatch = scrubbed.match(/\[([0-9]+\s*Marks?[^\]]*)\]/i);
-      let marks = marksMatch ? marksMatch[1] : undefined;
-
-      currentSection = { 
-        title: cleanTitle || "Core Topic", 
-        tag: sectionTag,
-        marks,
-        items: [] 
-      };
-      continue;
-    }
-
-    if (!currentSection) {
-      currentSection = { 
-        title: isRevision ? "Complete Syllabus Master Overview" : isPyq ? "Board Examination Solved Question" : "Chapter Concept Master Vault", 
-        tag: isPyq ? 'pyq' : 'notes',
-        items: [] 
-      };
-    }
-
-    // Subtopic or Concept Callouts: **1. Concept Title:** or **Concept Name:**
-    const isSubtopic = 
-      (trimmed.startsWith('**') && trimmed.includes(':**')) ||
-      (trimmed.startsWith('### ')) ||
-      (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 90);
-
-    if (isSubtopic) {
-      currentSection.items.push({
-        type: 'subtopic',
-        text: scrubbed
-      });
-    } else if (upper.startsWith('INSIGHT:') || upper.startsWith('TIP:') || upper.startsWith('EXAMINER TIP:') || upper.startsWith('EXAMINER NOTE:')) {
-      currentSection.items.push({
-        type: 'insight',
-        text: scrubbed.replace(/^INSIGHT:|^TIP:|^EXAMINER TIP:|^EXAMINER NOTE:/i, '').trim()
-      });
-    } else if (upper.startsWith('CBSE MARKING RUBRIC:') || upper.startsWith('MARKING RUBRIC:') || upper.startsWith('MARKING SCHEME:')) {
-      currentSection.items.push({
-        type: 'rubric',
-        text: scrubbed.replace(/^CBSE MARKING RUBRIC:|^MARKING RUBRIC:|^MARKING SCHEME:/i, '').trim()
-      });
-    } else if (upper.startsWith('SOLUTION:')) {
-      currentSection.items.push({
-        type: 'solution',
-        text: scrubbed.replace(/^SOLUTION:/i, '').trim()
-      });
-    } else if (upper.startsWith('STEP ') || upper.startsWith('STEP:')) {
-      currentSection.items.push({
-        type: 'step',
-        text: scrubbed
-      });
-    } else if (upper.startsWith('FORMULA:') || upper.includes('WHEN & WHY TO APPLY:') || (trimmed.startsWith('- **') && (trimmed.includes('Formula:') || trimmed.includes('Law:')))) {
-      currentSection.items.push({
-        type: 'formula',
-        text: scrubbed
-      });
-    } else if (upper.includes('DIAGRAM:') || upper.includes('SCHEMATIC:') || upper.includes('RAY DIAGRAM:')) {
-      currentSection.items.push({
-        type: 'diagram',
-        text: scrubbed
-      });
-    } else {
-      currentSection.items.push({
-        type: 'text',
-        text: scrubbed
-      });
-    }
-  }
-
-  if (currentSection) {
-    parsedSections.push(currentSection);
-  }
-
-  return parsedSections;
+  return {
+    title: formulaTitle,
+    equation: equation.replace(/^`+|`+$/g, '').trim(),
+    variables: variables.length > 0 ? variables : undefined,
+    whenToApply: whenToApply || 'Direct formula substitution in standard CBSE Class 12 board numericals.',
+    trap: trap || undefined
+  };
 };
 
 // Component for rendering human-crafted, clean aesthetic study notes
-const NaturalNotebookViewer: React.FC<{ 
+export const NaturalNotebookViewer: React.FC<{ 
   content: string; 
   pyqContent?: string;
   subject: string; 
+  chapterTitle?: string;
   tabMode: TabViewMode;
   isRevision?: boolean;
   config?: NotebookConfig;
   onSelectTab: (tab: TabViewMode) => void;
-}> = ({ content, pyqContent, subject, tabMode, isRevision, config, onSelectTab }) => {
+}> = ({ content, pyqContent, subject, chapterTitle, tabMode, isRevision, config, onSelectTab }) => {
   const [filterQuery, setFilterQuery] = useState('');
 
   const notesSections = useMemo(() => parseStudyContent(content, false, isRevision), [content, isRevision]);
@@ -331,6 +304,10 @@ const NaturalNotebookViewer: React.FC<{
     }
     return [];
   }, [pyqContent, isRevision]);
+
+  const chapterFormulas = useMemo(() => {
+    return getFormulasForChapter(chapterTitle || '', notesSections);
+  }, [chapterTitle, notesSections]);
 
   // Combine or filter sections based on active tab
   const displayedSections = useMemo(() => {
@@ -385,6 +362,79 @@ const NaturalNotebookViewer: React.FC<{
 
   const themeClasses = THEME_CLASSES[activeTheme] || THEME_CLASSES.paper;
 
+  // DEDICATED FORMULA VAULT VIEW
+  if (tabMode === 'formulas') {
+    const q = filterQuery.toLowerCase();
+    const filtered = chapterFormulas.filter(f => 
+      !q ||
+      f.title.toLowerCase().includes(q) ||
+      f.equation.toLowerCase().includes(q) ||
+      (f.category && f.category.toLowerCase().includes(q)) ||
+      (f.variables && f.variables.some(v => v.symbol.toLowerCase().includes(q) || v.meaning.toLowerCase().includes(q)))
+    );
+
+    return (
+      <div className={`space-y-6 w-full max-w-full mx-auto pb-28 px-1 ${getFontClass(activeFont)} ${getSizeClass(activeSize)}`}>
+        {/* Formula Vault Banner */}
+        <div className={`p-5 rounded-2xl border ${themeClasses.card} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs`}>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider">
+                ⚡ Formula Vault
+              </span>
+              <span className="text-xs font-bold opacity-75">
+                • {chapterFormulas.length} Core Formulas for {chapterTitle || 'Chapter'}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+              Formula Vault & Application Conditions
+            </h2>
+            <p className="text-xs opacity-75 font-medium mt-0.5">
+              Clean Unicode expressions, variable meanings with standard SI units, when-to-apply criteria, and examiner traps.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input 
+              type="text"
+              placeholder="Search formulas or symbols..."
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              className="px-3 py-2 bg-black/5 dark:bg-white/5 border border-slate-300/60 dark:border-slate-700 rounded-xl text-xs font-semibold outline-none w-full sm:w-64"
+            />
+            {filterQuery && (
+              <button 
+                onClick={() => setFilterQuery('')}
+                className="text-xs px-2.5 py-2 rounded-xl bg-black/10 hover:bg-black/20 font-bold shrink-0"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Formula Cards */}
+        {filtered.length === 0 ? (
+          <div className={`p-10 text-center rounded-2xl border ${themeClasses.card}`}>
+            <p className="font-bold text-sm">No formulas matched "{filterQuery}".</p>
+            <button 
+              onClick={() => setFilterQuery('')}
+              className="mt-3 px-4 py-1.5 bg-amber-800 text-white text-xs font-bold rounded-xl"
+            >
+              Show All Formulas
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {filtered.map((formula, fIdx) => (
+              <FormulaCard key={fIdx} formula={formula} theme={activeTheme} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-6 lg:space-y-8 w-full max-w-full mx-auto pb-28 px-1 ${getFontClass(activeFont)} ${getSizeClass(activeSize)}`}>
       {/* Search & Topic Filter Bar */}
@@ -431,19 +481,30 @@ const NaturalNotebookViewer: React.FC<{
           return (
             <div key={idx} className="w-full">
               {/* Section Header */}
-              <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center justify-between gap-3 mb-3.5">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${themeClasses.badge}`}>
-                    {isPyqCard ? `Q${idx + 1}` : idx + 1}
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-black shadow-md shrink-0 ${themeClasses.badge}`}>
+                    {isPyqCard ? `Q${idx + 1}` : (idx + 1 < 10 ? `0${idx + 1}` : `${idx + 1}`)}
                   </div>
-                  <h3 className={`text-base lg:text-xl uppercase tracking-tight ${themeClasses.title}`}>
-                    {section.title}
-                  </h3>
+                  <div>
+                    <h3 className={`text-base sm:text-lg lg:text-xl font-black uppercase tracking-tight ${themeClasses.title}`}>
+                      {section.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">
+                        {isPyqCard ? 'Solved Board PYQ' : `Concept Unit ${idx + 1}`}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {section.marks && (
-                  <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-extrabold text-xs rounded-full">
+                {section.marks ? (
+                  <span className="px-3 py-1 bg-amber-500/15 border border-amber-500/40 text-amber-900 dark:text-amber-200 font-black text-xs rounded-full shadow-2xs">
                     {section.marks}
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-block px-2.5 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[11px] font-bold rounded-full opacity-60">
+                    CBSE 2026-27
                   </span>
                 )}
               </div>
@@ -454,21 +515,91 @@ const NaturalNotebookViewer: React.FC<{
                   {section.items.map((item, itemIdx) => {
                     if (item.type === 'subtopic') {
                       return (
-                        <div key={itemIdx} className={`my-3.5 ${themeClasses.subtopic}`}>
-                          {renderFormattedText(item.text, config?.theme)}
+                        <div key={itemIdx} className={`my-4 ${themeClasses.subtopic}`}>
+                          <span className="text-base opacity-90">📌</span>
+                          <span className="flex-1">{renderFormattedText(item.text, config?.theme)}</span>
                         </div>
                       );
                     }
 
                     if (item.type === 'formula') {
+                      const formulaData = parseFormulaItemToData(item.text, section.title);
                       return (
-                        <div key={itemIdx} className={`my-3 font-mono ${themeClasses.formulaBox}`}>
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-900 dark:text-amber-300">
-                              ⚡ Formula & When-To-Apply
+                        <div key={itemIdx} className="my-4">
+                          <FormulaCard formula={formulaData} theme={activeTheme} />
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'definition') {
+                      return (
+                        <div key={itemIdx} className={`my-4 ${themeClasses.definitionBox}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-600/15 text-amber-950 dark:text-amber-200 border border-amber-300/60 dark:border-amber-800 flex items-center gap-1.5 shadow-2xs">
+                              📖 NCERT Verbatim Law / Definition
                             </span>
                           </div>
-                          <div className="font-bold leading-relaxed">
+                          <div className="leading-relaxed font-bold text-sm sm:text-base">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'derivation') {
+                      return (
+                        <div key={itemIdx} className={`my-4 ${themeClasses.derivationBox}`}>
+                          <div className="flex items-center gap-2 mb-2.5 pb-2 border-b border-indigo-200/80 dark:border-indigo-900/80">
+                            <span className="text-xs font-black uppercase tracking-wider text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                              🔬 Step-by-Step Mathematical Derivation & Proof
+                            </span>
+                          </div>
+                          <div className="leading-relaxed font-medium space-y-1.5 whitespace-pre-wrap text-sm sm:text-base">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'example') {
+                      return (
+                        <div key={itemIdx} className={`my-4 ${themeClasses.exampleBox}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-950 dark:text-blue-200 border border-blue-300/60 dark:border-blue-800 flex items-center gap-1.5 shadow-2xs">
+                              📝 Solved Model Problem / Example
+                            </span>
+                          </div>
+                          <div className="leading-relaxed font-bold text-sm sm:text-base">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'application') {
+                      return (
+                        <div key={itemIdx} className={`my-4 ${themeClasses.applicationBox}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-950 dark:text-teal-200 border border-teal-300/60 dark:border-teal-800 flex items-center gap-1.5 shadow-2xs">
+                              ⚙️ Practical Applications & Board Cases
+                            </span>
+                          </div>
+                          <div className="leading-relaxed font-medium text-sm sm:text-base">
+                            {renderFormattedText(item.text, config?.theme)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'keypoints') {
+                      return (
+                        <div key={itemIdx} className={`my-4 ${themeClasses.keypointsBox}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-950 dark:text-purple-200 border border-purple-300/60 dark:border-purple-800 flex items-center gap-1.5 shadow-2xs">
+                              📌 Rapid Revision Summary & Key Takeaways
+                            </span>
+                          </div>
+                          <div className="leading-relaxed font-medium text-sm sm:text-base">
                             {renderFormattedText(item.text, config?.theme)}
                           </div>
                         </div>
@@ -476,15 +607,51 @@ const NaturalNotebookViewer: React.FC<{
                     }
 
                     if (item.type === 'diagram') {
-                      return (
-                        <div key={itemIdx} className={`my-3 ${themeClasses.diagramBox}`}>
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-900 dark:text-indigo-300">
-                              📐 Board Diagram & Schematic
-                            </span>
+                      const resolvedType = resolveDiagramType(item, section.title);
+                      if (resolvedType) {
+                        return (
+                          <div key={itemIdx} className="my-5">
+                            <TextbookDiagram 
+                              type={resolvedType} 
+                              caption={item.diagramCaption || item.title || 'Official CBSE Textbook Diagram'} 
+                              theme={activeTheme === 'slate' ? 'dark' : activeTheme === 'oxford' ? 'oxford' : 'paper'}
+                            />
                           </div>
-                          <div className="leading-relaxed font-medium">
-                            {renderFormattedText(item.text, config?.theme)}
+                        );
+                      }
+                      // Skip crude or redundant non-book diagrams per user instructions ("Or diagrams hta do")
+                      return null;
+                    }
+
+                    if (item.type === 'table' && item.tableHeaders && item.tableRows) {
+                      return (
+                        <div key={itemIdx} className="my-5 overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                              <thead>
+                                <tr className="bg-amber-500/15 dark:bg-amber-500/25 border-b border-slate-200 dark:border-slate-800">
+                                  {item.tableHeaders.map((head, hIdx) => (
+                                    <th key={hIdx} className="px-4 py-3 font-black text-amber-950 dark:text-amber-200 uppercase tracking-wider text-[11px] sm:text-xs">
+                                      {renderFormattedText(head, config?.theme)}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                {item.tableRows.map((row, rIdx) => (
+                                  <tr 
+                                    key={rIdx} 
+                                    className={rIdx % 2 === 0 ? 'bg-white/70 dark:bg-slate-900/50' : 'bg-amber-50/30 dark:bg-slate-800/30 hover:bg-amber-100/30 dark:hover:bg-slate-800/60 transition-colors'}
+                                  >
+                                    {row.map((cell, cIdx) => (
+                                      <td key={cIdx} className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200 leading-relaxed align-top">
+                                        {renderFormattedText(cell, config?.theme)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       );
@@ -492,13 +659,13 @@ const NaturalNotebookViewer: React.FC<{
 
                     if (item.type === 'rubric') {
                       return (
-                        <div key={itemIdx} className={`p-4 my-3 rounded-2xl ${themeClasses.rubricBox}`}>
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-950 dark:text-emerald-300">
-                              ✅ CBSE Stepwise Marking Rubric
+                        <div key={itemIdx} className={`p-4 sm:p-5 my-4 ${themeClasses.rubricBox}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-950 dark:text-emerald-200 border border-emerald-400/60 dark:border-emerald-700 flex items-center gap-1.5 shadow-2xs">
+                              ✅ Official CBSE Stepwise Marking Scheme
                             </span>
                           </div>
-                          <div className="leading-relaxed font-semibold text-xs lg:text-sm">
+                          <div className="leading-relaxed font-bold text-xs sm:text-sm">
                             {renderFormattedText(item.text, config?.theme)}
                           </div>
                         </div>
@@ -507,11 +674,11 @@ const NaturalNotebookViewer: React.FC<{
 
                     if (item.type === 'solution') {
                       return (
-                        <div key={itemIdx} className={`p-4 my-3 rounded-2xl ${themeClasses.solution}`}>
-                          <span className="text-xs font-black uppercase tracking-wider block mb-1 text-emerald-700 dark:text-emerald-400">
+                        <div key={itemIdx} className={`p-4 sm:p-5 my-4 ${themeClasses.solution}`}>
+                          <span className="text-xs font-black uppercase tracking-wider block mb-1.5 text-indigo-800 dark:text-indigo-300">
                             ✍️ Complete Verified Solution:
                           </span>
-                          <div className="leading-relaxed font-semibold">
+                          <div className="leading-relaxed font-bold text-sm sm:text-base">
                             {renderFormattedText(item.text, config?.theme)}
                           </div>
                         </div>
@@ -524,11 +691,11 @@ const NaturalNotebookViewer: React.FC<{
                       const stepContent = colonIdx !== -1 ? item.text.substring(colonIdx + 1).trim() : '';
 
                       return (
-                        <div key={itemIdx} className="flex items-start gap-3 py-1.5">
-                          <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase shrink-0 mt-0.5 ${themeClasses.stepBadge}`}>
+                        <div key={itemIdx} className="flex items-start gap-3 py-2 border-b border-slate-100 dark:border-slate-800/60 last:border-0">
+                          <span className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-black uppercase shrink-0 mt-0.5 shadow-2xs ${themeClasses.stepBadge}`}>
                             {stepLabel}
                           </span>
-                          <div className="font-semibold leading-relaxed flex-1">
+                          <div className="font-bold leading-relaxed flex-1 text-sm sm:text-base">
                             {renderFormattedText(stepContent, config?.theme)}
                           </div>
                         </div>
@@ -537,9 +704,11 @@ const NaturalNotebookViewer: React.FC<{
 
                     if (item.type === 'insight') {
                       return (
-                        <div key={itemIdx} className={`p-4 my-3 rounded-2xl text-xs lg:text-sm ${themeClasses.insight}`}>
-                          <span className="font-black block mb-1">💡 Examiner Insight & Common Mistakes:</span>
-                          <div className="leading-relaxed font-medium">
+                        <div key={itemIdx} className={`p-4 sm:p-5 my-4 text-xs sm:text-sm ${themeClasses.insight}`}>
+                          <span className="font-black block mb-1.5 text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                            💡 Examiner Tip, High-Frequency Trap & Scoring Insight:
+                          </span>
+                          <div className="leading-relaxed font-bold">
                             {renderFormattedText(item.text, config?.theme)}
                           </div>
                         </div>
@@ -561,6 +730,43 @@ const NaturalNotebookViewer: React.FC<{
                           <pre className={`p-4 overflow-x-auto font-mono text-xs leading-relaxed ${themeClasses.codeBg}`}>
                             <code>{item.text}</code>
                           </pre>
+                        </div>
+                      );
+                    }
+
+                    if (item.type === 'bullet') {
+                      const bulletClean = item.text.replace(/^[-*+•]\s*/, '').trim();
+                      const boldPrefixMatch = bulletClean.match(/^\*\*([^*:]+)(?:\*\*:|:\*\*)\s*(.*)$/);
+                      const plainColonMatch = !boldPrefixMatch ? bulletClean.match(/^([A-Za-z0-9\s\-–—/()]{2,35}):\s+(.+)$/) : null;
+
+                      if (boldPrefixMatch || (plainColonMatch && !bulletClean.startsWith('http'))) {
+                        const label = (boldPrefixMatch ? boldPrefixMatch[1] : plainColonMatch![1]).trim();
+                        const restOfText = (boldPrefixMatch ? boldPrefixMatch[2] : plainColonMatch![2]).trim();
+                        return (
+                          <div key={itemIdx} className="flex items-start gap-2.5 py-1.5">
+                            <span className="text-amber-600 dark:text-amber-400 font-black shrink-0 mt-1 text-sm">✦</span>
+                            <div className={`leading-relaxed font-medium flex-1 ${themeClasses.text}`}>
+                              <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black inline-block mr-2 shadow-2xs ${
+                                activeTheme === 'paper'
+                                  ? 'bg-amber-100 text-amber-950 border border-amber-300/80'
+                                  : activeTheme === 'oxford'
+                                  ? 'bg-blue-100 text-blue-950 border border-blue-300/80'
+                                  : 'bg-indigo-950/80 text-amber-300 border border-indigo-700'
+                              }`}>
+                                {label}
+                              </span>
+                              {renderFormattedText(restOfText, config?.theme)}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={itemIdx} className="flex items-start gap-2.5 py-1.5">
+                          <span className="text-amber-600 dark:text-amber-400 font-black shrink-0 mt-1 text-xs">◆</span>
+                          <div className={`leading-relaxed font-medium flex-1 ${themeClasses.text}`}>
+                            {renderFormattedText(bulletClean, config?.theme)}
+                          </div>
                         </div>
                       );
                     }
@@ -615,8 +821,13 @@ const ChapterView: React.FC<{
   const [books, setBooks] = useState<UploadedBook[]>([]);
   const [activeViewerBook, setActiveViewerBook] = useState<UploadedBook | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
+  const [isTeacherReaderOpen, setIsTeacherReaderOpen] = useState(false);
 
   const isRevision = chapter.id.includes('_rev');
+
+  const teacherLecture = useMemo(() => {
+    return synthesizeTeacherLecture(chapter.title, subject.name, notesContent, pyqContent);
+  }, [chapter.title, subject.name, notesContent, pyqContent]);
 
   useEffect(() => {
     const loadBooks = async () => {
@@ -810,17 +1021,18 @@ const ChapterView: React.FC<{
             </button>
           </div>
 
-          {/* Voice Audio Reader */}
+          {/* AI Reader — Teacher Mode Button */}
           <button 
-            onClick={isSpeaking ? stopAudio : playAudio}
-            title={isSpeaking ? "Stop Voice Lecture" : "Play Natural Audio Lecture"}
-            className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center rounded-xl border transition-all shrink-0 ${
-              isSpeaking 
-                ? 'bg-red-600 border-red-500 text-white animate-pulse' 
-                : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20'
-            }`}
+            onClick={() => setIsTeacherReaderOpen(true)}
+            title="Open AI Reader (Teacher Mode) • 10-Min Exam Masterclass"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-black flex items-center gap-2 transition-all shadow-md shadow-amber-600/20 active:scale-95 shrink-0"
           >
-            {isSpeaking ? '■' : '🔊'}
+            <span className="text-base">🎓</span>
+            <span className="hidden sm:inline">AI Reader (Teacher Mode)</span>
+            <span className="sm:hidden">Teacher AI</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/20 uppercase tracking-widest font-extrabold hidden md:inline">
+              10-Min Drill
+            </span>
           </button>
         </div>
       </div>
@@ -1011,15 +1223,47 @@ const ChapterView: React.FC<{
               </button>
             </div>
           ) : (
-            <NaturalNotebookViewer 
-              content={notesContent} 
-              pyqContent={pyqContent}
-              subject={subject.name}
-              tabMode={tabMode}
-              isRevision={isRevision}
-              config={{ theme, font, size: fontSize }}
-              onSelectTab={(tab) => setTabMode(tab)}
-            />
+            <>
+              {/* Teacher Mode Exam Revision Callout */}
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-indigo-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center text-lg shadow-sm shrink-0">
+                    🎓
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-600 text-white">
+                        AI Teacher Mode
+                      </span>
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-400">
+                        {teacherLecture.stats.mustKnowCount} 🔴 Must Know • {teacherLecture.stats.importantCount} 🟡 Important
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+                      10-minute audio exam masterclass. Explains essential formulas, laws, and common mistakes in conversational natural teacher tone.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsTeacherReaderOpen(true)}
+                  className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-black rounded-xl shrink-0 flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95"
+                >
+                  <span>Listen to Teacher</span>
+                  <span>▶</span>
+                </button>
+              </div>
+
+              <NaturalNotebookViewer 
+                content={notesContent} 
+                pyqContent={pyqContent}
+                subject={subject.name}
+                chapterTitle={chapter.title}
+                tabMode={tabMode}
+                isRevision={isRevision}
+                config={{ theme, font, size: fontSize }}
+                onSelectTab={(tab) => setTabMode(tab)}
+              />
+            </>
           )}
         </div>
       </div>
@@ -1028,6 +1272,13 @@ const ChapterView: React.FC<{
       {activeViewerBook && (
         <PDFViewerModal book={activeViewerBook} onClose={() => setActiveViewerBook(null)} />
       )}
+
+      {/* Embedded Teacher Reader Modal */}
+      <TeacherReaderModal
+        isOpen={isTeacherReaderOpen}
+        lecture={teacherLecture}
+        onClose={() => setIsTeacherReaderOpen(false)}
+      />
     </div>
   );
 };

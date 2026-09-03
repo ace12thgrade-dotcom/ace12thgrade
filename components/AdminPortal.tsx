@@ -53,6 +53,14 @@ import {
   CONTENT_UPDATE_EVENT
 } from '../services/contentStore.ts';
 import { getInstantNotes, getInstantPYQs } from '../services/offlineNotesService.ts';
+import { 
+  StudyItem, 
+  StudySection, 
+  CanonicalChapterNotes, 
+  normalizeToCanonicalNotes, 
+  serializeCanonicalNotes 
+} from '../services/notesParser.ts';
+import { NaturalNotebookViewer } from './SubjectDashboard.tsx';
 import PDFViewerModal from './PDFViewerModal.tsx';
 
 interface AdminPortalProps {
@@ -190,6 +198,81 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
     logoutAdmin();
     setIsAuthenticated(false);
     setPasscodeInput('');
+  };
+
+  // Snippet helper for notes editor
+  const insertMarkdownSnippet = (snippet: string) => {
+    setEditorText((prev) => (prev ? prev + '\n\n' + snippet : snippet));
+  };
+
+  // Auto Format and Normalize ChatGPT / External notes into canonical CBSE notes structure
+  const handleAutoFormatChatGPT = () => {
+    if (!editorText.trim()) return;
+    const currentSub = subjects.find((s) => s.id === selectedSubjectId);
+    const currentChap = currentSub?.chapters.find((c) => c.id === selectedChapterId);
+    
+    const canonical = normalizeToCanonicalNotes(editorText, {
+      chapterTitle: currentChap?.title || 'Chapter Study Notes',
+      isPyq: contentType === 'pyqs',
+      subjectId: selectedSubjectId
+    });
+
+    // Format into clean structured markdown sections
+    const structuredMarkdown = canonical.sections.map((sec, idx) => {
+      let out = `## ${sec.title}${sec.marks ? ` [${sec.marks}]` : ''}\n`;
+      sec.items.forEach(item => {
+        if (item.type === 'subtopic') {
+          out += `\n### ${item.text.replace(/^#+\s*/, '')}\n`;
+        } else if (item.type === 'formula') {
+          out += `\n$$\n${item.text}\n$$\n`;
+        } else if (item.type === 'definition') {
+          out += `\n**Definition:** ${item.text}\n`;
+        } else if (item.type === 'derivation') {
+          out += `\n**Derivation:**\n${item.text}\n`;
+        } else if (item.type === 'example') {
+          out += `\n**Solved Example:** ${item.text}\n`;
+        } else if (item.type === 'application') {
+          out += `\n**Applications:** ${item.text}\n`;
+        } else if (item.type === 'keypoints') {
+          out += `\n**Key Points:** ${item.text}\n`;
+        } else if (item.type === 'insight') {
+          out += `\nINSIGHT: ${item.text}\n`;
+        } else if (item.type === 'rubric') {
+          out += `\n**CBSE Marking Rubric:** ${item.text}\n`;
+        } else if (item.type === 'solution') {
+          out += `\nSOLUTION: ${item.text}\n`;
+        } else if (item.type === 'step') {
+          out += `${item.text}\n`;
+        } else if (item.type === 'code') {
+          out += `\n\`\`\`${item.lang || 'code'}\n${item.text}\n\`\`\`\n`;
+        } else if (item.type === 'bullet') {
+          out += `${item.text.startsWith('-') || item.text.startsWith('•') ? item.text : `• ${item.text}`}\n`;
+        } else {
+          out += `\n${item.text}\n`;
+        }
+      });
+      return out.trim();
+    }).join('\n\n---\n\n');
+
+    setEditorText(structuredMarkdown);
+    setSaveSuccessMsg('✨ Notes auto-formatted into canonical CBSE structure! Click Save when ready.');
+    setTimeout(() => setSaveSuccessMsg(''), 4000);
+  };
+
+  // Upload custom notes/PYQs from .txt, .md, or .json file
+  const handleNotesFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setEditorText(content);
+        setSaveSuccessMsg(`Loaded notes from "${file.name}". Auto-normalizing...`);
+        setTimeout(() => setSaveSuccessMsg(''), 3500);
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Save Note / PYQ
@@ -381,11 +464,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
       }
     };
     reader.readAsText(file);
-  };
-
-  // Format Helpers
-  const insertMarkdownSnippet = (snippet: string) => {
-    setEditorText((prev) => prev + '\n\n' + snippet);
   };
 
   // Lock Screen Render
@@ -937,35 +1015,65 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
                   </div>
                 </div>
 
-                {/* Quick Snippet Insert Bar */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-400 mr-1">
-                    Insert Helper:
+                {/* Quick Snippet & Auto-Structure Insert Bar */}
+                <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={handleAutoFormatChatGPT}
+                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-800 to-amber-700 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-all"
+                    title="Parse and normalize pasted ChatGPT / Markdown notes into CBSE structured cards"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                    Auto-Structure (ChatGPT / Raw Text)
+                  </button>
+
+                  <label className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all">
+                    <FileUp className="w-3.5 h-3.5 text-amber-600" />
+                    Upload File (.txt/.md/.json)
+                    <input
+                      type="file"
+                      accept=".txt,.md,.markdown,.json"
+                      onChange={handleNotesFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
+
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Snippets:
                   </span>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('**Topic Name:**\n- Detailed explanation with key definitions.\n- Important points for 2026-27 Board exams.')}
+                    onClick={() => insertMarkdownSnippet('## Major Concept Title\n### 1.1 Key Principles\n- Detailed explanation with definitions.\n- Board exam focus point.')}
                     className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    + Topic Block
+                    + Section
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('$$\n\\text{Formula: } F = \\frac{1}{4\\pi\\varepsilon_0} \\frac{q_1 q_2}{r^2}\n$$\n**When to Apply:** Used for electrostatic point charges in vacuum.')}
+                    onClick={() => insertMarkdownSnippet('$$\nF = \\frac{1}{4\\pi\\varepsilon_0} \\frac{q_1 q_2}{r^2}\n$$\n**When to Apply:** Used for stationary point charges in electrostatics.')}
                     className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    + Formula Box
+                    + Formula
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('QUESTION: Q1. [3 Marks, All India 2024] State and prove the law.\nSOLUTION:\n**Step 1: Statement:** ...\n**Step 2: Mathematical Proof:** ...\n**CBSE Marking Rubric:** 1 Mark for definition, 2 Marks for derivation.')}
+                    onClick={() => insertMarkdownSnippet('**Definition:** State fundamental definition or scientific law precisely as per NCERT standard.')}
                     className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    + Solved PYQ Template
+                    + Definition
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('INSIGHT: Examiners look for bold keywords and properly labeled diagrams.')}
+                    onClick={() => insertMarkdownSnippet('**Derivation:** Step-by-step mathematical proof\n**Step 1:** Initial conditions and statement\n**Step 2:** Mathematical integration\n**Step 3:** Final boxed formula')}
+                    className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    + Derivation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertMarkdownSnippet('INSIGHT: Examiners award full marks when step indices and units are clearly boxed.')}
                     className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
                   >
                     + Examiner Tip
@@ -978,7 +1086,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
                       className="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      {previewActive ? 'Hide Preview' : 'Split Preview'}
+                      {previewActive ? 'Hide Live Preview' : 'Split Live Preview'}
                     </button>
                     <button
                       type="button"
@@ -994,69 +1102,84 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
               </div>
 
               {/* Editor + Live Preview */}
-              <div className={`grid ${previewActive ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-4`}>
+              <div className={`grid ${previewActive ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'} gap-4`}>
                 {/* Editor Textarea */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-amber-600" />
-                      Markdown Content (Always Accessible Offline)
+                      Raw / ChatGPT Notes Editor
                     </span>
-                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                       {editorText.length} characters
                     </span>
                   </div>
                   <textarea
                     value={editorText}
                     onChange={(e) => setEditorText(e.target.value)}
-                    placeholder="Type or paste custom offline study notes, formulas, or question-answers here..."
-                    className="w-full flex-1 min-h-[380px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/30 leading-relaxed resize-y"
+                    placeholder="Paste ChatGPT notes, markdown, or JSON here. Click 'Auto-Structure' to instantly format into textbook layout..."
+                    className="w-full flex-1 min-h-[420px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/30 leading-relaxed resize-y"
                   />
                 </div>
 
-                {/* Live Preview */}
+                {/* Live Preview using NaturalNotebookViewer for exact 1:1 fidelity */}
                 {previewActive && (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col max-h-[460px] overflow-y-auto">
-                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <div className="bg-[#faf8f4] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col max-h-[500px] overflow-y-auto">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-amber-200/50 dark:border-slate-800">
+                      <span className="text-xs font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
                         <Eye className="w-4 h-4 text-emerald-600" />
-                        Live Formatted Preview
+                        Exact Student View Preview
                       </span>
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                        Render Output
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                        1:1 Render Fidelity
                       </span>
                     </div>
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed whitespace-pre-wrap font-sans text-slate-800 dark:text-slate-200">
-                      {editorText || 'Nothing to preview yet.'}
+                    <div className="flex-1 overflow-y-auto">
+                      <NaturalNotebookViewer 
+                        content={editorText || 'No notes entered yet.'}
+                        pyqContent={contentType === 'pyqs' ? editorText : undefined}
+                        subject={currentSubject?.name || 'Subject'}
+                        tabMode={contentType === 'pyqs' ? 'pyqs' : 'notes'}
+                        onSelectTab={() => {}}
+                      />
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Bottom Action Save Bar */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
                 <div>
                   {saveSuccessMsg ? (
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-black animate-in fade-in">
+                    <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-black animate-in fade-in">
                       <CheckCircle2 className="w-4 h-4" />
                       <span>{saveSuccessMsg}</span>
                     </div>
                   ) : (
                     <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                      Changes are saved into browser storage and instantly take effect on student dashboard notes.
+                      Changes are converted into canonical structured format and immediately sync across all logged-in devices.
                     </p>
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSaveContent}
-                  disabled={isSavingNote}
-                  className="px-6 py-2.5 bg-amber-800 hover:bg-amber-700 text-white rounded-xl text-xs font-black shadow transition-all flex items-center gap-2 shrink-0"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{isSavingNote ? 'Saving...' : 'Save & Publish Offline'}</span>
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleAutoFormatChatGPT}
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition-all"
+                  >
+                    Format & Beautify
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveContent}
+                    disabled={isSavingNote}
+                    className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-800 hover:bg-amber-700 text-white rounded-xl text-xs font-black shadow transition-all flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{isSavingNote ? 'Saving...' : 'Save & Publish Live'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

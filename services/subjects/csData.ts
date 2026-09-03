@@ -1,49 +1,27 @@
 // csData.ts - Complete, Rigorous CBSE Class 12 Computer Science (Python & SQL) Knowledge Base (2026-27 Pattern)
 // Covers all units + Full Syllabus Revision with Python syntax, Pickle/CSV file handling, Stacks, Network Case Studies, SQL Queries, and 15-year Solved PYQs.
+// Modularized into:
+// - services/subjects/cs/part1.ts (Unit 1: Python Review, Functions, File Handling, Stacks)
+// - services/subjects/cs/part2.ts (Unit 2: Computer Networks, Unit 3: SQL & Python-MySQL Connectivity + Master Revision)
+// - services/subjects/cs/pyqs1.ts (Unit 1 Solved PYQs)
+// - services/subjects/cs/pyqs2.ts (Unit 2 & 3 Solved PYQs + Master Question Bank)
+
+import { getCSPart1Notes } from './cs/part1';
+import { getCSPart2Notes } from './cs/part2';
+import { getCSPart1PYQs } from './cs/pyqs1';
+import { getCSPart2PYQs } from './cs/pyqs2';
 
 export function getCSContent(chapter: string, type: 'notes' | 'pyqs'): string {
-  const isRevision = chapter.toUpperCase().includes("REVISION") || chapter.toUpperCase().includes("FULL");
-  const lower = chapter.toLowerCase();
+  const lower = chapter.toLowerCase().trim();
 
   if (type === 'notes') {
-    if (isRevision) {
-      return `TOPIC: Class 12 Computer Science (Python) Complete Board Revision Masterbook
-Comprehensive master sheet for CBSE Class 12 Computer Science (083) (2026-27 Pattern).
+    // Check Part 1 (Unit 1: Python, Files, Stacks)
+    const part1Notes = getCSPart1Notes(lower);
+    if (part1Notes) return part1Notes;
 
-**1. Python Core Syntax & File Handling Cheat Sheet:**
-- **Text File Operations:**
-  - Modes: 'r' (read), 'w' (write - overwrites), 'a' (append), 'r+' (read+write), 'w+' (write+read).
-  - Methods: f.read() (entire string), f.readline() (single line string), f.readlines() (list of lines).
-  - File pointer: f.tell() (returns current byte position), f.seek(offset, from_what) (0=start, 1=current, 2=end).
-- **Binary File Operations (pickle module):**
-  - **pickle.dump(object, file_handle):** Serializes Python object into binary stream.
-  - **pickle.load(file_handle):** Deserializes binary stream back into Python object (raises EOFError at end-of-file).
-- **CSV File Operations (csv module):**
-  - **csv.writer(file_handle, delimiter=','):** Returns writer object. Methods: writer.writerow(list), writer.writerows(nested_list).
-  - **csv.reader(file_handle):** Returns reader iterator yielding rows as lists of strings.
-- **Stack Data Structure (LIFO):**
-  - Push operation: stack.append(item).
-  - Pop operation: if len(stack) == 0: print("Underflow") else: stack.pop().
-  - Peek operation: stack[-1] (top element).
-
-**2. SQL & Relational Database Master Commands:**
-- **DDL Commands:** CREATE TABLE, ALTER TABLE (ADD, MODIFY, DROP), DROP TABLE.
-- **DML Commands:** INSERT INTO table VALUES (...), UPDATE table SET col=val WHERE ..., DELETE FROM table WHERE ...
-- **Aggregate Functions:** COUNT(*), COUNT(col), SUM(col), AVG(col), MIN(col), MAX(col).
-- **Clauses Order:** SELECT -> FROM -> WHERE -> GROUP BY -> HAVING -> ORDER BY.
-- **Difference:** WHERE filters individual rows before grouping; HAVING filters groups created by GROUP BY.
-- **Degrees & Cardinality:** Degree = Number of Attributes (Columns); Cardinality = Number of Tuples (Rows).
-- **Python-MySQL Connectivity (mysql.connector):**
-  - con = mysql.connector.connect(host='localhost', user='root', password='...', database='...')
-  - cur = con.cursor() -> cur.execute(sql_query) -> cur.fetchall() / cur.fetchone() -> con.commit() -> con.close().
-
-**3. Computer Networks Master Rules:**
-- **Cable Selection:** Fiber Optic (High speed, long distance, immune to EMI), Coaxial (moderate), Twisted Pair (LAN).
-- **Server Placement Rule:** Install server in the wing/building having the **maximum number of computers** (80-20 Rule).
-- **Repeater Rule:** Place repeater when distance between two blocks/buildings exceeds **70 to 100 meters**.
-- **Hub/Switch Rule:** Install a switch/hub inside **every building/wing** to connect local computers.
-INSIGHT: For binary file read functions, always wrap pickle.load() inside a try-except EOFError block.`;
-    }
+    // Check Part 2 (Unit 2: Networks, Unit 3: Database & SQL + Master Revision)
+    const part2Notes = getCSPart2Notes(lower);
+    if (part2Notes) return part2Notes;
 
     // Default fallback
     return `TOPIC: CBSE Class 12 Computer Science: ${chapter}
@@ -58,6 +36,15 @@ Comprehensive, high-yield study material strictly aligned with the latest CBSE 2
 INSIGHT: Always mention appropriate file closing f.close() or use the 'with open()' construct.`;
   } else {
     // CS SOLVED PYQS
+    // Check Part 1 PYQs
+    const part1PYQs = getCSPart1PYQs(lower);
+    if (part1PYQs) return part1PYQs;
+
+    // Check Part 2 PYQs
+    const part2PYQs = getCSPart2PYQs(lower);
+    if (part2PYQs) return part2PYQs;
+
+    // Default fallback solved PYQs
     return `QUESTION: Q1. [3 Marks, Delhi 2024] Write a function in Python count_words() that reads a text file 'STORY.TXT' and counts the number of words starting with the letter 'M' or 'm'.
 SOLUTION:
 \`\`\`python
@@ -84,7 +71,6 @@ QUESTION: Q2. [3 Marks, All India 2023] Write functions in Python: (i) Push_Elem
 SOLUTION:
 \`\`\`python
 def Push_Element(stk, book):
-    # book is a list: [BookNo, BookName]
     if book[0] > 100:
         stk.append(book)
         print("Book successfully pushed:", book)
@@ -108,12 +94,11 @@ Distances: Admin to Science = 80m, Admin to Arts = 150m, Admin to Library = 60m,
 (c) Suggest the best topology for connecting all blocks.
 (d) Which wired transmission medium provides the highest data transfer speed between blocks?
 SOLUTION:
-(a) **Server Placement:** **Admin Block**. Justification: According to the 80-20 rule of networking, the server should be placed in the wing with the maximum number of computers (120 PCs) to minimize network traffic and latency.
-(b) **Repeaters & Switches:**
-  - **Repeaters:** Required on cables where distance exceeds 70-100m, i.e., between **Admin Block and Arts Block (150m)**.
-  - **Switches/Hubs:** Required in **EVERY block (Admin, Science, Arts, Library)** to connect all computers within each local area network.
-(c) **Topology:** **Star Topology** (with Admin Block at the central hub) or **Tree Topology**.
-(d) **Wired Medium:** **Optical Fiber Cable (OFC)** provides the highest bandwidth, speed, and immunity to electromagnetic interference.
+(a) **Server Placement:** **Admin Block** (maximum number of computers: 120 PCs, 80-20 rule).
+(b) **Repeaters & Switches:** Repeater between Admin and Arts (150m > 70-100m). Switches in every block.
+(c) **Topology:** **Star Topology** (Admin block as center) or **Tree Topology**.
+(d) **Wired Medium:** **Optical Fiber Cable (OFC)** provides the highest bandwidth and immunity to EMI.
 INSIGHT: In network case study questions, always provide concise 1-line justifications referring to distance and PC count.`;
   }
 }
+

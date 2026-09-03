@@ -53,3 +53,51 @@ export interface AdminSettings {
   lastLogin: string;
   theme: 'dark' | 'light' | 'auto';
 }
+
+export type StudyTheme = 'paper' | 'oxford' | 'slate';
+
+export type StudyItemType =
+  | 'text'
+  | 'subtopic'
+  | 'code'
+  | 'insight'
+  | 'solution'
+  | 'step'
+  | 'formula'
+  | 'rubric'
+  | 'diagram'
+  | 'definition'
+  | 'derivation'
+  | 'example'
+  | 'application'
+  | 'keypoints'
+  | 'bullet';
+
+export interface StudyItem {
+  type: StudyItemType;
+  text: string;
+  title?: string;
+  lang?: string;
+  marks?: string;
+  year?: string;
+  bulletPoints?: string[];
+}
+
+export interface StudySection {
+  title: string;
+  tag?: 'formula' | 'notes' | 'pyq' | 'diagram' | 'general';
+  marks?: string;
+  year?: string;
+  description?: string;
+  items: StudyItem[];
+}
+
+export interface CanonicalChapterNotes {
+  chapterTitle: string;
+  chapterDescription?: string;
+  subjectId?: string;
+  sections: StudySection[];
+  version?: number;
+  lastUpdated?: string;
+}
+
