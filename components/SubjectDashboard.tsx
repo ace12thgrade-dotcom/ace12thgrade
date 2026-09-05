@@ -16,6 +16,7 @@ import { synthesizeTeacherLecture } from '../services/teacherReaderService.ts';
 import { FormulaCard, FormulaData } from './FormulaCard.tsx';
 import { TextbookDiagram, DiagramType } from './TextbookDiagram.tsx';
 import { getFormulasForChapter } from '../services/formulaVaultService.ts';
+import { FullSubjectRevision } from './FullSubjectRevision.tsx';
 import { BookOpen, FileText, Upload, Plus, ShieldCheck, Edit3, Download, Eye, Layers, Headphones, Sparkles, Volume2 } from 'lucide-react';
 
 interface SubjectDashboardProps {
@@ -811,7 +812,8 @@ const ChapterView: React.FC<{
   onClose: () => void;
   onOpenAdmin?: (subjectId?: string, chapterId?: string) => void;
 }> = ({ chapter, subject, onClose, onOpenAdmin }) => {
-  const [tabMode, setTabMode] = useState<TabViewMode>('notes');
+  const isRevision = chapter.id.includes('_rev');
+  const [tabMode, setTabMode] = useState<TabViewMode>(() => isRevision ? 'pyqs' : 'notes');
   const [notesContent, setNotesContent] = useState<string>('');
   const [pyqContent, setPyqContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -822,8 +824,6 @@ const ChapterView: React.FC<{
   const [activeViewerBook, setActiveViewerBook] = useState<UploadedBook | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
   const [isTeacherReaderOpen, setIsTeacherReaderOpen] = useState(false);
-
-  const isRevision = chapter.id.includes('_rev');
 
   const teacherLecture = useMemo(() => {
     return synthesizeTeacherLecture(chapter.title, subject.name, notesContent, pyqContent);
@@ -975,6 +975,14 @@ const ChapterView: React.FC<{
 
           {/* Dedicated Study View Tabs */}
           <div className="flex p-1 rounded-xl bg-black/5 dark:bg-white/5 border border-slate-300/60 dark:border-slate-700 overflow-x-auto no-scrollbar">
+            {isRevision && (
+              <button 
+                onClick={() => setTabMode('pyqs')}
+                className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${tabMode === 'pyqs' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+              >
+                <span>🎯 Question Bank (Board PYQs)</span>
+              </button>
+            )}
             <button 
               onClick={() => setTabMode('notes')}
               className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'notes' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
@@ -987,12 +995,14 @@ const ChapterView: React.FC<{
             >
               📑 Formula Vault
             </button>
-            <button 
-              onClick={() => setTabMode('pyqs')}
-              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'pyqs' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
-            >
-              {isRevision ? '🎯 15 Full PYQs' : '🎯 4-5 Solved PYQs'}
-            </button>
+            {!isRevision && (
+              <button 
+                onClick={() => setTabMode('pyqs')}
+                className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'pyqs' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+              >
+                🎯 4-5 Solved PYQs
+              </button>
+            )}
             <button 
               onClick={() => setTabMode('books')}
               className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${tabMode === 'books' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
@@ -1190,6 +1200,13 @@ const ChapterView: React.FC<{
                 Retry Loading
               </button>
             </div>
+          ) : isRevision && tabMode === 'pyqs' ? (
+            <FullSubjectRevision 
+              subjectId={subject.id} 
+              theme={theme} 
+              font={font} 
+              fontSize={fontSize} 
+            />
           ) : (
             <NaturalNotebookViewer 
               content={notesContent} 
@@ -1377,7 +1394,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({
                       ? 'bg-amber-600 text-white' 
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}>
-                    {isRev ? '⭐ Master Revision & 15 PYQs' : `Chapter ${chapter.id.replace(/[a-z_]/gi, '') || 'Module'}`}
+                    {isRev ? '⭐ Master Revision & Board Question Bank' : `Chapter ${chapter.id.replace(/[a-z_]/gi, '') || 'Module'}`}
                   </span>
                   <span className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 font-black text-sm transition-colors">
                     Open →
@@ -1396,7 +1413,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({
                   <span>📖 Complete Notes</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-                  <span>{isRev ? '🎯 15 Solved PYQs' : '🎯 4-5 Solved PYQs'}</span>
+                  <span>{isRev ? '🎯 Board Question Bank' : '🎯 4-5 Solved PYQs'}</span>
                 </div>
               </div>
             </button>
