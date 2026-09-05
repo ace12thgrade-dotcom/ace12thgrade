@@ -1,166 +1,20 @@
 // services/subjects/english/pyqs1.ts
-// Section B Writing Skills & Flamingo Prose Solved Board PYQs
-// Authentic recent CBSE Board questions with comprehensive notebook-style solutions.
+// Flamingo Prose Chapters (ef1 to ef8) Solved Board PYQs
+// Dedicated recent authentic CBSE Class 12 English Core Board examination questions and model answers.
 
-export function getEnglishPart1PYQs(chapterLower: string): string | null {
-  // WRITING SKILLS & FLAMINGO PROSE SOLVED PYQS
+export function getEnglishPart1PYQs(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
+  // CHAPTER 1: The Last Lesson (ef1)
   if (
-    chapterLower.includes('writing') ||
-    chapterLower.includes('notice') ||
-    chapterLower.includes('invitation') ||
-    chapterLower.includes('letter') ||
-    chapterLower.includes('job application') ||
-    chapterLower.includes('article') ||
-    chapterLower.includes('report') ||
-    chapterLower === 'eng_writing'
-  ) {
-    return `QUESTION: Q1. [4 Marks Notice Writing, CBSE 2024 (Delhi)]
-You are Rishabh / Radhika, Head Boy / Head Girl of Delhi Public School, R.K. Puram, New Delhi. Your school is organizing an "Annual Science & Robotics Exhibition" for Classes IX to XII. Draft a notice in not more than 50 words inviting students to register their working models. Mention all essential details such as date, venue, time, and last date for project submission.
-SOLUTION:
-\`\`\`
-+------------------------------------------------------------------------+
-|                     DELHI PUBLIC SCHOOL, R.K. PURAM                    |
-|                                                                        |
-|                                 NOTICE                                 |
-|                                                                        |
-| 15th April 2026                                                        |
-|                                                                        |
-|                 ANNUAL SCIENCE & ROBOTICS EXHIBITION 2026              |
-|                                                                        |
-| All students of Classes IX to XII are hereby informed that our school  |
-| is organizing the Annual Science & Robotics Exhibition on 2nd May 2026 |
-| from 9:00 AM to 2:00 PM in the School Auditorium.                      |
-|                                                                        |
-| Interested students (individual or teams up to 3) should submit their  |
-| project abstracts and model proposals to their respective science      |
-| teachers latest by 25th April 2026. Attractive trophies and cash prizes|
-| will be awarded to the best innovations.                               |
-|                                                                        |
-| Radhika / Rishabh                                                      |
-| Head Girl / Head Boy                                                   |
-+------------------------------------------------------------------------+
-\`\`\`
-**CBSE Marking Rubric:**
-- 1 Mark for Format (Box, Name of Institution, NOTICE, Date, Heading, Signatory & Designation).
-- 2 Marks for Content (All 5 W's covered: What, When, Where, Eligibility, Submission Deadline).
-- 1 Mark for Accuracy, Spelling, and adherence to the 50-word limit.
-INSIGHT: Always use a ruler to draw a crisp rectangular box around the notice.
-
-QUESTION: Q2. [4 Marks Formal Invitation Reply, CBSE 2023 (All India)]
-Mrs. and Mr. V.K. Mehra have received an invitation from Principal, St. Xavier's Senior Secondary School, Jaipur, to attend the Annual Athletic Meet as the Chief Guest on 10th December 2026 at 10:00 AM. Write a formal letter of acceptance in not more than 50 words.
-SOLUTION:
-\`\`\`
-74, Civil Lines, Jaipur
-28th November 2026
-
-The Principal
-St. Xavier's Senior Secondary School
-Jaipur
-
-Subject: Acceptance of Invitation to Annual Athletic Meet
-
-Sir,
-
-Mrs. and Mr. V.K. Mehra express their sincere gratitude to the Principal,
-Staff, and Students of St. Xavier's Senior Secondary School for extending a
-gracious invitation to preside over the Annual Athletic Meet as Chief Guest
-on 10th December 2026 at 10:00 AM in the school stadium.
-
-They take immense pleasure in confirming their acceptance of this esteemed
-invitation and look forward to witnessing the sporting talent of the students.
-
-Yours sincerely,
-V.K. Mehra
-\`\`\`
-**CBSE Marking Rubric:**
-- 1 Mark for Format (Sender's Address, Date, Receiver's Address, Subject, Salutation, Signatory).
-- 2 Marks for Content (Expression of gratitude, event details, unambiguous acceptance).
-- 1 Mark for Expression, Grammatical accuracy, and 50-word adherence.
-
-QUESTION: Q3. [5 Marks Job Application with Bio-Data, CBSE 2024 (Delhi)]
-Bal Vidya Mandir, Meerut, urgently requires a Post Graduate Teacher (PGT) in Mathematics. You are Siddharth / Sneha, M.Sc. (Mathematics), B.Ed., residing at 45, Shastri Nagar, Meerut. Draft a complete job application along with your comprehensive Bio-Data in 120-150 words in response to an advertisement published in The Hindu dated 12th March 2026.
-SOLUTION:
-**Part A: Covering Letter:**
-\`\`\`
-45, Shastri Nagar
-Meerut
-
-15th March 2026
-
-The Principal
-Bal Vidya Mandir
-Meerut
-
-Subject: Application for the post of PGT Mathematics
-
-Sir,
-
-In response to your advertisement published in 'The Hindu' dated 12th March
-2026 for the post of PGT Mathematics, I wish to offer my candidature for the same.
-
-I hold a Master's degree in Mathematics from Delhi University with first-class
-honors, followed by a B.Ed. degree from CIE, Delhi. I possess four years of teaching
-experience at senior secondary levels and have consistently achieved exceptional board
-results while mentoring students for competitive Olympiads.
-
-I am dynamic, hardworking, and committed to fostering strong conceptual clarity.
-Enclosed herewith is my detailed Bio-Data and copies of certificates for your kind perusal.
-If selected, I assure you of rendering dedicated and sincere service to the institution.
-
-Yours faithfully,
-Sneha / Siddharth
-\`\`\`
-
-**Part B: Bio-Data / Curriculum Vitae:**
-\`\`\`
-                          BIO-DATA
-1. Name                 : Siddharth / Sneha
-2. Father's Name        : Shri Ramesh Sharma
-3. Date of Birth        : 14th August 1996
-4. Age                  : 29 Years
-5. Gender               : Female / Male
-6. Permanent Address    : 45, Shastri Nagar, Meerut
-7. Contact Number       : 9811XXXXXX / sneha.sharma@email.com
-8. Marital Status       : Single
-9. Nationality          : Indian
-10. Educational Qualifications (Tabular):
-+--------+--------------------+------------------+------+---------------+
-| S.No.  | Examination Passed | Board/University | Year | % / Division  |
-+--------+--------------------+------------------+------+---------------+
-| 1.     | Class X (AISSE)    | CBSE             | 2012 | 95% (Dist.)   |
-| 2.     | Class XII (AISSCE) | CBSE             | 2014 | 96% (Dist.)   |
-| 3.     | B.Sc. (Hons) Maths | Delhi University | 2017 | 84% (1st Div) |
-| 4.     | M.Sc. Mathematics  | Delhi University | 2019 | 82% (1st Div) |
-| 5.     | B.Ed.              | CIE, DU          | 2021 | 80% (1st Div) |
-+--------+--------------------+------------------+------+---------------+
-11. Work Experience     : 4 Years as PGT Mathematics at DAV Model School, Meerut.
-12. Salary Expected     : As per CBSE / Government Pay Scale Norms.
-13. References          : 
-    (i)  Dr. A.K. Bansal, Head of Mathematics, St. Stephen's College, DU (Ph: 9810XXXXXX)
-    (ii) Mrs. R. Sengupta, Principal, DAV Model School, Meerut (Ph: 9871XXXXXX)
-
-Declaration: I hereby solemnly declare that all statements made above are true and correct.
-Place: Meerut
-Date: 15th March 2026                                              (Signature)
-\`\`\`
-**CBSE Marking Rubric:**
-- 1 Mark for Format (Covering letter format + Bio-Data structure).
-- 2 Marks for Content (Reference to advertisement, qualifications, tabular bio-data, experience, references).
-- 2 Marks for Expression, Tone, Coherence, and Grammatical accuracy.
-INSIGHT: Always present educational qualifications in a clear tabular grid; this immediately secures high format marks.`;
-  }
-
-  // FLAMINGO PROSE SOLVED PYQS
-  if (
-    chapterLower.includes('last lesson') ||
-    chapterLower.includes('lost spring') ||
-    chapterLower.includes('deep water') ||
-    chapterLower.includes('rattrap') ||
-    chapterLower.includes('indigo') ||
-    chapterLower.includes('poets and pancakes') ||
-    chapterLower.includes('interview') ||
-    chapterLower.includes('going places') ||
-    chapterLower === 'eng_prose'
+    id === 'ef1' ||
+    (!id && (
+      chapterLower === 'the last lesson' ||
+      chapterLower.includes('last lesson') ||
+      chapterLower.includes('alphonse daudet') ||
+      chapterLower.includes('m. hamel') ||
+      chapterLower === 'ef1'
+    ))
   ) {
     return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
 "When a people are enslaved, as long as they hold fast to their language it is as if they had the key to their prison." Explain the profound significance of M. Hamel's statement in 'The Last Lesson'.
@@ -174,25 +28,320 @@ SOLUTION:
 - 1 Mark for linking it to liberation against political enslavement.
 
 QUESTION: Q2. [5 Marks Long Thematic Answer, CBSE 2023 (All India)]
-Compare and contrast the lives of Saheb-e-Alam from Seemapuri and Mukesh from Firozabad in 'Lost Spring'. What does their contrasting attitude towards their circumstances reveal about hope and resilience?
+How did the order from Berlin affect the school, particularly M. Hamel and Franz? What transformation did Franz undergo on that fateful morning?
 SOLUTION:
-**Comparison of Saheb-e-Alam and Mukesh:**
-1. **Similarities of Grinding Poverty:**
-   - Both boys belong to marginalized, impoverished communities trapped in socioeconomic stagnation.
-   - Saheb is a Bangladeshi refugee living amidst the squalor of Seemapuri, surviving on garbage scavenging; Mukesh is trapped in the blistering heat of glass bangle furnaces in Firozabad, facing inevitable blindness.
-   - Both are victims of societal neglect, child labor, and systemic apathy.
-
-2. **Divergent Attitudes and Outlook:**
-   - **Saheb's Resignation:** Saheb's spirit of freedom is compromised. When he takes up a job at a tea stall for Rs. 800, his care-free look is extinguished. He trades his independence for bare survival (*"the steel canister seemed heavier than the plastic bag"*); he accepts subservience to a master.
-   - **Mukesh's Fierce Defiance:** Mukesh, in sharp contrast, refuses to surrender to his inherited fate. He proclaims: *"I want to be a motor mechanic. I will go to a garage and learn."* Despite the crushing web of sahukars, middlemen, policemen, and caste traditions that defeat his elders, Mukesh dares to dream beyond the family lineage.
-
-3. **Universal Authorial Message:**
-   - Anees Jung highlights that while abject poverty crushes the dreams of millions, true hope resides in individuals like Mukesh who possess the audacity to rebel against fatalism and strive for self-determination.
+**Impact of the Berlin Order:**
+1. **Atmosphere in School:**
+   - Instead of the customary morning commotion (banging of desks, lessons chanted in unison), an eerie, Sunday-morning quiet enveloped the school.
+   - The back benches, which were usually empty, were occupied by solemn village elders (Old Hauser, the former mayor, the former postmaster) paying silent tribute to their native language and to M. Hamel's forty years of faithful service.
+2. **Impact on M. Hamel:**
+   - Dressed in his ceremonial attire (green coat, frilled shirt, black embroidered silk cap).
+   - Displayed unprecedented patience, gentleness, and sorrow. He blamed himself as well as the parents for neglecting the children's education.
+   - Concluded the class by writing with all his strength on the blackboard: *"VIVE LA FRANCE!"*
+3. **Franz's Transformation:**
+   - Franz shifted from an indifferent, fearful truant who dreaded participles into an emotionally awakened, patriotic student.
+   - His textbooks (grammar, history of saints), which had seemed like such a nuisance, suddenly felt like *"old friends that I couldn't give up"*.
+   - His fear of Hamel's iron ruler vanished, replaced by profound respect and grief over the teacher's imminent departure.
 **CBSE Marking Rubric:**
-- 2 Marks for comparing their backgrounds in Seemapuri and Firozabad.
-- 2 Marks for contrasting Saheb's passive surrender with Mukesh's active resilience.
-- 1 Mark for analyzing the thematic message on hope and systemic cycle.
-INSIGHT: Use the quote about the steel canister being heavier than the plastic bag to demonstrate mastery.`;
+- 2 Marks for describing the altered classroom environment and presence of village elders.
+- 1.5 Marks for M. Hamel's emotional demeanor and final symbolic act.
+- 1.5 Marks for Franz's internal transformation from carelessness to regret and patriotism.
+INSIGHT: Contrast Franz's initial desire to skip school with his subsequent emotional remorse.`;
+  }
+
+  // CHAPTER 2: Lost Spring (ef2)
+  if (
+    id === 'ef2' ||
+    (!id && (
+      chapterLower === 'lost spring' ||
+      chapterLower.includes('lost spring') ||
+      chapterLower.includes('stories of stolen childhood') ||
+      chapterLower.includes('saheb') ||
+      chapterLower.includes('mukesh') ||
+      chapterLower === 'ef2'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+Why does the author say that the steel canister seemed heavier than the plastic bag Saheb used to carry?
+SOLUTION:
+**The Burden of the Steel Canister:**
+- The light plastic bag belonged to Saheb; carrying it gave him personal autonomy, independence, and the carefree freedom of childhood.
+- The steel canister belonged to the owner of the tea stall where Saheb was employed for Rs. 800.
+- The canister symbolized his surrender of freedom, forced servitude, and the crushing weight of bonded wage-labor. Saheb was no longer his own master.
+**CBSE Marking Rubric:**
+- 1 Mark for contrasting ownership (bag was his own vs canister belongs to tea stall master).
+- 1 Mark for explaining loss of independence and carefree childhood.
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (All India)]
+"Together they have imposed the baggage on the child that he cannot put down." Who are "they"? Explain the ruthless nexus of forces that entraps the bangle makers of Firozabad, and how Mukesh dares to challenge it.
+SOLUTION:
+**The Vicious Nexus ("They"):**
+1. **Two Distinct Worlds:**
+   - The author delineates two distinct webs entangling the bangle makers:
+     * First, the web of poverty, caste prejudice, and generational fatalism (*karma*).
+     * Second, the vicious circle of **sahukars (moneylenders), middlemen, policemen, keepers of law, bureaucrats, and politicians**.
+2. **Modus Operandi of Exploitation:**
+   - If the youth ever attempt to organize into cooperatives to secure fair wages, they are hauled up by the police, beaten, and jailed on concocted charges of doing something illegal.
+   - Decades of mind-numbing toil kill all initiative and the ability to dream in the elders.
+3. **Mukesh's Audacious Rebellion:**
+   - In a community resigned to fatalism, Mukesh shows a spark of courage: *"I want to be a motor mechanic. I will go to a garage and learn."*
+   - He chooses to break free from his inherited caste lineage, showing a practical determination to walk miles to achieve his dream.
+**CBSE Marking Rubric:**
+- 2 Marks for identifying the nexus (sahukars, middlemen, police, politicians, bureaucrats).
+- 2 Marks for explaining how fear and violence suppress attempts to form cooperatives.
+- 1 Mark for analyzing Mukesh's determination to become a motor mechanic.
+INSIGHT: Use exact phrases like 'vicious circle' and 'mind-numbing toil' to secure maximum marks.`;
+  }
+
+  // CHAPTER 3: Deep Water (ef3)
+  if (
+    id === 'ef3' ||
+    (!id && (
+      chapterLower === 'deep water' ||
+      chapterLower.includes('deep water') ||
+      chapterLower.includes('william douglas') ||
+      chapterLower.includes('ymca') ||
+      chapterLower === 'ef3'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+What strategy did William Douglas plan when he realized he was sinking in the YMCA pool? Why did the plan fail?
+SOLUTION:
+**Douglas's Strategy and Its Failure:**
+- **The Plan:** As his feet touched the tiled bottom, Douglas planned to make a tremendous jump upward, pop to the surface like a cork, lie flat on his back, and paddle to the edge of the pool.
+- **Why It Failed:** When he jumped, the ascent was painfully slow. Instead of popping up, he opened his eyes only to see dark, suffocating yellow water. His legs felt paralyzed, dead weights, and overwhelming hydrostatic panic incapacitated him.
+**CBSE Marking Rubric:**
+- 1 Mark for describing the plan (spring like a cork, paddle to safety).
+- 1 Mark for explaining why it failed (water suffocated him, physical paralysis).
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (Delhi)]
+How did the swimming instructor transform William Douglas into a confident swimmer? How did Douglas subsequently test his self-reliance?
+SOLUTION:
+**1. Piece-by-Piece Training by the Instructor:**
+- The instructor worked with Douglas five days a week, one hour each day, over six months:
+  * **Harness & Overhead Pulley:** A rope attached to Douglas's belt ran over an overhead pulley; this prevented panic while swimming back and forth across the pool.
+  * **Breathing Technique:** Taught him to submerge his face and exhale underwater, then raise his nose and inhale.
+  * **Kicking Technique:** For weeks, Douglas kicked his legs holding the side of the pool until his rigid muscles relaxed.
+  * **Integration:** In April, the instructor integrated all components and commanded: *"Dive off and swim the length of the pool, crawl stroke."*
+2. **Douglas's Self-Testing for Complete Mastery:**
+  * To purge residual fear, Douglas traveled to Lake Wentworth in New Hampshire, dived off Triggs Island, and swam two miles across to Stamp Act Island.
+  * When terror briefly returned in the middle of the lake, Douglas scoffed: *"Well, Mr Terror, what do you think you can do to me?"*
+  * Finally, he swam across Warm Lake and back, triumphantly shouting as Gilbert Peak echoed his victory.
+**CBSE Marking Rubric:**
+- 3 Marks for detailed steps of instructor's training (pulley, breathing, leg work, synthesis).
+- 2 Marks for independent verification at Lake Wentworth and Warm Lake.
+INSIGHT: Mentioning the instructor "built a swimmer piece by piece" mirrors NCERT's explicit phraseology.`;
+  }
+
+  // CHAPTER 4: The Rattrap (ef4)
+  if (
+    id === 'ef4' ||
+    (!id && (
+      chapterLower === 'the rattrap' ||
+      chapterLower.includes('rattrap') ||
+      chapterLower.includes('selma lagerlof') ||
+      chapterLower.includes('edla') ||
+      chapterLower === 'ef4'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+Why did the peddler decline the ironmaster's invitation to accompany him home to the manor house?
+SOLUTION:
+**Reasons for Declining the Invitation:**
+- The peddler was carrying the **thirty kronor** he had stolen from the trusting old crofter the previous morning.
+- Walking into the ironmaster's manor house felt like deliberately throwing himself into a lion's den.
+- He feared his indigent identity would be unmasked in daylight, leading to his arrest by the police.
+**CBSE Marking Rubric:**
+- 1 Mark for mentioning the stolen 30 kronor.
+- 1 Mark for the fear of arrest and unmasking.
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (All India)]
+How does Edla Willmansson's kindness and empathy bring about a total moral transformation in the vagabond peddler? Why did he sign his farewell letter as 'Captain von Stahle'?
+SOLUTION:
+**1. Edla's Empathy vs. Ironmaster's Conditional Hospitality:**
+- The ironmaster had welcomed the peddler under the mistaken impression that he was his old comrade Captain Nils Olof. Upon discovering the truth, he reacted with fury and threatened to summon the sheriff.
+- Edla, however, pleaded for the peddler even after knowing his poverty. She recognized that he walked the whole year round, hunted from every doorstep, with no place to feel safe and welcome.
+- She treated him with unconditional respect, served him Christmas food, and allowed him to keep her father's suit as a gift.
+**2. The Moral Transformation:**
+- For the first time in his wretched life, someone treated the peddler like a human being of dignity rather than a vermin or criminal.
+- This unconditional grace awakened his dormant conscience.
+**3. Signing as 'Captain von Stahle':**
+- In his parting letter, he left the stolen thirty kronor with a request that it be returned to the crofter.
+- He signed as **"Captain von Stahle"** because Edla had treated him with the dignity due to a captain; this elevated status inspired him to behave with honorable chivalry and escape the world's rattrap.
+**CBSE Marking Rubric:**
+- 2 Marks for analyzing Edla's compassion vs the ironmaster's anger.
+- 2 Marks for the peddler's psychological change and return of 30 kronor.
+- 1 Mark for the symbolic significance of signing as 'Captain von Stahle'.
+INSIGHT: Emphasize that Edla gave him dignity *before* he proved himself worthy, which caused the transformation.`;
+  }
+
+  // CHAPTER 5: Indigo (ef5)
+  if (
+    id === 'ef5' ||
+    (!id && (
+      chapterLower === 'indigo' ||
+      chapterLower.includes('indigo') ||
+      chapterLower.includes('louis fischer') ||
+      chapterLower.includes('champaran') ||
+      chapterLower === 'ef5'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+Why did Mahatma Gandhi agree to the planters' offer of a 25 percent refund to the Champaran sharecroppers instead of demanding 100 percent?
+SOLUTION:
+**Gandhi's Reason for the 25% Settlement:**
+- Gandhi explained that the monetary amount of the refund was secondary.
+- More crucially, the British landlords were forced to surrender a portion of their money, and with it, **a portion of their prestige and arrogant authority**.
+- Hitherto, British planters had behaved as lords above the law; the settlement proved to the terrified peasants that they possessed legitimate rights and courageous champions, liberating them from fear.
+**CBSE Marking Rubric:**
+- 1 Mark for highlighting the surrender of prestige over mere monetary amount.
+- 1 Mark for instilling confidence and eliminating fear among the peasants.
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (Delhi)]
+"The Champaran episode was a turning point in Gandhi's life." Justify this statement by analyzing how Gandhi combined political resistance with social and educational reconstruction.
+SOLUTION:
+**1. Turning Point in National Politics:**
+- Champaran was India's first mass demonstration of **Satyagraha (non-violent civil disobedience)**.
+- Gandhi declared that the British could not order him about in his own country.
+- The spontaneous gathering of thousands of illiterate peasants outside Motihari courthouse demonstrated that British power, hitherto dreaded, could be challenged by peaceful collective action.
+**2. Focus on Grassroots Human Needs:**
+- Gandhi's politics were never an abstraction; they were intertwined with the practical, day-to-day miseries of the rural masses.
+- Recognizing Champaran's backwardness, Gandhi did not depart after winning the legal battle:
+  * Opened primary schools in six villages, enlisting volunteers like Mahadev Desai and Narhari Parikh.
+  * Kasturbai taught ashram rules on personal cleanliness and community sanitation.
+  * Recruited a doctor who served the community with three basic medicines: castor oil, quinine, and sulphur ointment.
+**3. The Lesson in Self-Reliance:**
+- Gandhi refused to retain English pacifist Charles Freer Andrews to support their cause, admonishing lawyers that relying on an Englishman reflected moral weakness. Indians had to rely on themselves to win freedom.
+**CBSE Marking Rubric:**
+- 2 Marks for explaining Champaran as the birth of mass civil disobedience.
+- 2 Marks for detailing social and health reforms (schools, sanitation, medicines).
+- 1 Mark for self-reliance lesson with C.F. Andrews.`;
+  }
+
+  // CHAPTER 6: Poets and Pancakes (ef6)
+  if (
+    id === 'ef6' ||
+    (!id && (
+      chapterLower === 'poets and pancakes' ||
+      chapterLower.includes('poets and pancakes') ||
+      chapterLower.includes('asokamitran') ||
+      chapterLower.includes('gemini studios') ||
+      chapterLower === 'ef6'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+Why was the make-up room of Gemini Studios considered a prime example of national integration long before AIR and Doordarshan broadcast such programs?
+SOLUTION:
+**National Integration at Gemini Studios:**
+- The make-up department was initially headed by a Bengali, who was succeeded by a Maharashtrian.
+- He was assisted by a Dharwar Kannadiga, an Andhraite, a Madras Indian Christian, an Anglo-Burmese, and local Tamils.
+- People from completely diverse linguistic, cultural, and religious backgrounds worked harmoniously together under one roof, epitomizing national integration.
+**CBSE Marking Rubric:**
+- 1 Mark for citing the diverse linguistic/regional backgrounds of the make-up staff.
+- 1 Mark for explaining how they worked in seamless harmony before national media campaigns existed.
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (All India)]
+Analyze the character of Kothamangalam Subbu as depicted by Asokamitran. Why was he regarded as the indispensable 'Number 2' at Gemini Studios?
+SOLUTION:
+**Character and Significance of Kothamangalam Subbu:**
+1. **Endless Creativity and Problem-Solving:**
+   - Subbu was extraordinarily resourceful. Whenever the Boss (S.S. Vasan) struggled with a scene, Subbu instantly offered fourteen different ways to shoot it; if rejected, he produced fourteen more alternatives immediately.
+   - He gave direction, purpose, and creative definition to Gemini Studios during its golden era.
+2. **Literary and Artistic Versatility:**
+   - He was a genuinely talented poet and novelist who chose to deliberately subordinate his literary genius to cinema.
+   - He wrote the sprawling novel *Thillana Mohanambal* with dozens of richly etched characters, and was an accomplished character actor who consistently outshone lead actors.
+3. **Warm Generosity and Sycophancy:**
+   - Subbu had a genuine love for everyone; his house served as a permanent feeding ground for distant relatives and acquaintances.
+   - However, his flattering loyalty and eagerness to please the Boss earned him the jealousy of frustrated staff members like the Office Boy, who blamed Subbu for their failures.
+**CBSE Marking Rubric:**
+- 2 Marks for his creative troubleshooting ability with the Boss.
+- 1.5 Marks for his literary talents (novels, acting) and hospitality.
+- 1.5 Marks for explaining why others (like the office boy) envied him.`;
+  }
+
+  // CHAPTER 7: The Interview (ef7)
+  if (
+    id === 'ef7' ||
+    (!id && (
+      chapterLower === 'the interview' ||
+      chapterLower.includes('the interview') ||
+      chapterLower.includes('christopher silvester') ||
+      chapterLower.includes('umberto eco') ||
+      chapterLower === 'ef7'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+What is Umberto Eco's theory of "interstices"? How does it explain his prolific literary output?
+SOLUTION:
+**Eco's Theory of Interstices:**
+- Umberto Eco explains that our lives contain large amounts of empty spaces (*interstices* or time pockets).
+- Eco utilizes these small pockets of idle time rather than letting them go to waste.
+- For example, while waiting for someone to arrive on the elevator from the ground floor to the third floor, Eco utilizes those minutes to write an article or finish a paragraph. This disciplined utilization of interstices explains his extraordinary productivity.
+**CBSE Marking Rubric:**
+- 1 Mark for defining interstices as empty spaces or gaps in daily life.
+- 1 Mark for illustrating with the elevator example and link to productivity.
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (Delhi)]
+Differentiate between the views of Western literary figures who despised interviews and Umberto Eco's relaxed, accessible attitude towards them.
+SOLUTION:
+**1. Hostile Views of Western Authors:**
+- Many eminent authors viewed interviews as an unwarranted assault on personal privacy:
+  * **V.S. Naipaul:** Believed people are wounded by interviews and lose a part of themselves.
+  * **Lewis Carroll:** Possessed a horror of the interviewer, dreading the vulgar celebrity worship (*lionization*).
+  * **Rudyard Kipling:** Vehemently condemned interviewing as *"immoral, a crime, an assault, cowardly and vile"*, deserving of legal punishment.
+  * **Saul Bellow:** Characterized interviews as suffocating thumbprints on his windpipe.
+**2. Umberto Eco's Receptive and Philosophical Demeanor:**
+- In sharp contrast, Umberto Eco is remarkably accessible, affable, and candid during his interview with Mukund Padmanabhan.
+- He demystifies his global fame, explains his philosophical methods without pretense, and cheerfully shares the creative secrets of *The Name of the Rose*.
+- Eco views communication as a natural extension of his pedagogical mission as a university professor.
+**CBSE Marking Rubric:**
+- 2.5 Marks for detailing the negative perspectives of Kipling, Naipaul, Carroll, and Bellow.
+- 2.5 Marks for explaining Eco's welcoming, open, and candid approach.`;
+  }
+
+  // CHAPTER 8: Going Places (ef8)
+  if (
+    id === 'ef8' ||
+    (!id && (
+      chapterLower === 'going places' ||
+      chapterLower.includes('going places') ||
+      chapterLower.includes('a. r. barton') ||
+      chapterLower.includes('sophie') ||
+      chapterLower.includes('danny casey') ||
+      chapterLower === 'ef8'
+    ))
+  ) {
+    return `QUESTION: Q1. [2 Marks Short Answer, CBSE 2024 (Delhi)]
+Why was Sophie jealous of her brother Geoff's silence? What did Geoff's silence represent to her?
+SOLUTION:
+**Sophie's Jealousy of Geoff's Silence:**
+- Geoff was quiet and rarely spoke about his personal life or thoughts.
+- To Sophie, his silence represented a vast, mysterious outer world that she had never visited.
+- She imagined that Geoff possessed exotic secrets, met glamorous people, and accessed distant corners of the city that remained closed to her, making her yearn to be admitted into his private realm.
+**CBSE Marking Rubric:**
+- 1 Mark for explaining Geoff's quiet nature.
+- 1 Mark for explaining what the silence symbolized (mysterious, glamorous outer world).
+
+QUESTION: Q2. [5 Marks Long Answer, CBSE 2023 (All India)]
+Contrast Sophie and Jansie with respect to their socioeconomic backgrounds, temperaments, and aspirations. Why is Jansie called Sophie's realistic foil?
+SOLUTION:
+**1. Common Background:**
+- Both girls belong to working-class, lower-middle-class families in an industrial neighborhood and are classmates earmarked to work in the local biscuit factory.
+**2. Contrasting Temperaments and Dreams:**
+- **Sophie (Romantic Daydreamer):**
+  * Sophie lives in a fantasy world of unrealistic aspirations.
+  * She dreams of buying a luxury boutique like Mary Quant, becoming an actress, or managing a fashion house, refusing to recognize her family's financial hardships.
+  * She invents an imaginary romantic encounter with Irish soccer star Danny Casey and deludes herself into waiting for him at the canal wharf.
+- **Jansie (Pragmatic Realist):**
+  * Jansie is sensible, level-headed, and maturely accepts her social and financial boundaries.
+  * She knows that starting a boutique requires capital they do not have, and gently reminds Sophie: *"It takes money, Soaf... they don't pay shop assistants that much. Be sensible."*
+  * She wishes Sophie wouldn't harbor wild illusions that could lead to heartbreak.
+**3. Jansie as a Literary Foil:**
+- Jansie's pragmatic realism sharply highlights Sophie's tragic detachment from reality, making her the perfect literary foil to Sophie.
+**CBSE Marking Rubric:**
+- 2 Marks for comparing their common lower-middle-class biscuit-factory background.
+- 2 Marks for contrasting Sophie's romantic daydreams with Jansie's practical sobriety.
+- 1 Mark for explaining how Jansie's grounding acts as an optical foil to Sophie's illusions.`;
   }
 
   return null;

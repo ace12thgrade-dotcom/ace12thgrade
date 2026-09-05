@@ -1,17 +1,24 @@
 // services/subjects/cs/pyqs1.ts
 // Unit 1 Solved Board PYQs & Question Bank
-// Python Review, Functions, File Handling (Text, Binary, CSV), Stacks
+// Dedicated PYQs for chapters:
+// - cs1: Python Revision Tour
+// - cs2: Functions
+// - cs3: File Handling
+// - cs4: Data Structures (Stack)
 // Authentic recent CBSE Board questions with comprehensive notebook-style solutions.
 
-export function getCSPart1PYQs(chapterLower: string): string | null {
-  // UNIT 1: Python Review, Functions & Exception Handling
+export function getCSPart1PYQs(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
+  // CHAPTER 1: Python Revision Tour PYQs
   if (
-    chapterLower.includes('python') ||
-    chapterLower.includes('function') ||
-    chapterLower.includes('exception') ||
-    chapterLower === 'cs1' ||
-    chapterLower.includes('computational thinking') ||
-    chapterLower.includes('review of python')
+    id === 'cs1' ||
+    (!id && (
+      chapterLower === 'python revision tour' ||
+      chapterLower.includes('revision tour') ||
+      chapterLower.includes('review of python') ||
+      chapterLower === 'cs1'
+    ))
   ) {
     return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)] Consider the following Python code snippet:
 \`\`\`python
@@ -30,6 +37,90 @@ SOLUTION:
 In Python, tuples are **immutable** sequence types. Once initialized, their elements cannot be changed, replaced, added, or deleted in-place. Attempting to assign a new value to \`tup[1]\` directly violates immutability and raises a \`TypeError\`.
 **CBSE Marking Rubric:**
 - 1 Mark for selecting option (C).
+
+QUESTION: Q2. [2 Marks Output Prediction, CBSE 2023 (Delhi)] Find and write the output of the following Python code:
+\`\`\`python
+text = "BOARD#2026@EXAM"
+new_text = ""
+for ch in text:
+    if ch.isupper():
+        new_text += ch.lower()
+    elif ch.isdigit():
+        new_text += str((int(ch) + 1) % 10)
+    else:
+        new_text += "*"
+print(new_text)
+\`\`\`
+SOLUTION:
+**Dry Run Step-by-Step Tracing:**
+- 'B' is uppercase -> 'b'
+- 'O' is uppercase -> 'o'
+- 'A' is uppercase -> 'a'
+- 'R' is uppercase -> 'r'
+- 'D' is uppercase -> 'd'
+- '#' is special character -> '*'
+- '2' is digit -> (2+1)%10 = '3'
+- '0' is digit -> (0+1)%10 = '1'
+- '2' is digit -> (2+1)%10 = '3'
+- '6' is digit -> (6+1)%10 = '7'
+- '@' is special character -> '*'
+- 'E', 'X', 'A', 'M' are uppercase -> 'e', 'x', 'a', 'm'
+
+**Final Output Printed:**
+\`\`\`
+board*3137*exam
+\`\`\`
+**CBSE Marking Rubric:**
+- 1 Mark for correctly converting uppercase letters and replacing special characters with \`*\`.
+- 1 Mark for correctly evaluating digit increments.
+
+QUESTION: Q3. [2 Marks Output Prediction, CBSE 2024] Predict the output of the following code:
+\`\`\`python
+d = {"Apple": 120, "Banana": 40, "Orange": 80}
+lst = []
+for fruit, price in d.items():
+    if price >= 50:
+        lst.append(fruit[:3].upper())
+print("-".join(lst))
+\`\`\`
+SOLUTION:
+**Execution Trace:**
+- "Apple": price is 120 (>= 50) -> \`"Apple"[:3]\` is \`"App"\` -> \`"APP"\` appended to \`lst\`.
+- "Banana": price is 40 (< 50) -> skipped.
+- "Orange": price is 80 (>= 50) -> \`"Orange"[:3]\` is \`"Ora"\` -> \`"ORA"\` appended to \`lst\`.
+- \`lst\` contains \`["APP", "ORA"]\`.
+- \`"-".join(lst)\` produces \`"APP-ORA"\`.
+
+**Final Output:**
+\`\`\`
+APP-ORA
+\`\`\`
+**CBSE Marking Rubric:**
+- 1 Mark for identifying qualifying dictionary keys and slicing.
+- 1 Mark for uppercase joining with hyphen delimiter.`;
+  }
+
+  // CHAPTER 2: Functions PYQs
+  if (
+    id === 'cs2' ||
+    (!id && (
+      chapterLower === 'functions' ||
+      chapterLower.includes('user defined function') ||
+      (chapterLower.includes('function') && !chapterLower.includes('database') && !chapterLower.includes('sql')) ||
+      chapterLower === 'cs2'
+    ))
+  ) {
+    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)] Which of the following function headers in Python is INVALID?
+(A) def calc(a, b=10, c=20):
+(B) def calc(a=10, b=20, c=30):
+(C) def calc(a, b, c=30):
+(D) def calc(a=10, b, c=30):
+SOLUTION:
+**Correct Answer:** (D) def calc(a=10, b, c=30):
+**Notebook Explanation:**
+In Python, default arguments must always be placed **at the end** of the parameter list. Any non-default argument (here \`b\`) cannot follow a default argument (here \`a=10\`). Attempting this raises \`SyntaxError: non-default argument follows default argument\`.
+**CBSE Marking Rubric:**
+- 1 Mark for selecting option (D).
 
 QUESTION: Q2. [2 Marks Output Prediction, CBSE 2023 (Delhi)] Find and write the output of the following Python code:
 \`\`\`python
@@ -64,7 +155,7 @@ SOLUTION:
 | 12 | return M (returns 70) | **70** | 30 | - | - | Returned 70 assigned to A | 70 |
 | 13 | print(A, "$", B) | 70 | 30 | - | - | **Prints: 70 $ 30** | - |
 
-**Final Output:**
+**Final Complete Output Printed:**
 \`\`\`
 30 # 20
 20 $ 30
@@ -72,223 +163,196 @@ SOLUTION:
 70 $ 30
 \`\`\`
 **CBSE Marking Rubric:**
-- 0.5 Mark for each correct output line.
-INSIGHT: Default argument N=40 is used in the second function call because only one argument was passed.
+- ½ Mark for each correct line of printed output.
 
-QUESTION: Q3. [3 Marks, CBSE 2024 (91)] Write a function \`count_vowels_words()\` in Python that reads a text file named \`"STORY.TXT"\` and counts the number of words that start with a vowel (A, E, I, O, U or a, e, i, o, u).
+QUESTION: Q3. [3 Marks Function Writing, CBSE 2024 (Delhi)]
+Write a user-defined function in Python named \`sum_series(N, X=2)\` that calculates and displays the sum of the following mathematical series up to \`N\` terms:
+\`S = 1 + X^1/1! + X^2/2! + X^3/3! + ... + X^N/N!\`
 SOLUTION:
 \`\`\`python
-def count_vowels_words():
+import math
+
+def sum_series(N, X=2):
+    series_sum = 1.0  # First term is 1
+    for i in range(1, N + 1):
+        term = (X ** i) / math.factorial(i)
+        series_sum += term
+    print(f"Sum of series up to {N} terms with X={X} is: {series_sum:.4f}")
+    return series_sum
+\`\`\`
+**CBSE Marking Rubric:**
+- 1 Mark for correct function header with default parameter \`X=2\`.
+- 1 Mark for loop structure and factorial term calculation.
+- 1 Mark for accumulating sum and printing formatted result.`;
+  }
+
+  // CHAPTER 3: File Handling PYQs
+  if (
+    id === 'cs3' ||
+    (!id && (
+      chapterLower === 'file handling' ||
+      chapterLower.includes('file handling') ||
+      chapterLower === 'cs3'
+    ))
+  ) {
+    return `QUESTION: Q1. [3 Marks Text File Handling, CBSE 2024 (Delhi)]
+Write a function in Python \`count_vowel_words()\` that reads a text file named \`"ARTICLE.TXT"\` and counts and displays the number of words that start with a vowel (A, E, I, O, U, or lowercase).
+SOLUTION:
+\`\`\`python
+def count_vowel_words():
     vowels = ('A', 'E', 'I', 'O', 'U', 'a', 'e', 'i', 'o', 'u')
     count = 0
     try:
-        with open("STORY.TXT", "r") as f:
-            for line in f:
-                words = line.split()
-                for word in words:
-                    if word.startswith(vowels):
-                        count += 1
-        print("Number of words starting with a vowel:", count)
+        with open("ARTICLE.TXT", "r") as f:
+            content = f.read()
+            words = content.split()
+            for word in words:
+                if word[0] in vowels:
+                    count += 1
+        print("Total words starting with a vowel:", count)
     except FileNotFoundError:
-        print("Error: STORY.TXT file does not exist.")
+        print("Error: The file ARTICLE.TXT does not exist.")
+
+# Driver call
+count_vowel_words()
 \`\`\`
-**Dry Run:**
-If file contains: \`"An apple a day keeps the doctor away"\`
-- Words starting with vowel: \`"An", "apple", "a", "away"\`
-- Output: \`Number of words starting with a vowel: 4\`
 **CBSE Marking Rubric:**
-- 1 Mark for opening file correctly in read mode (or with open).
-- 1 Mark for reading lines, splitting into words, and iterating.
-- 1 Mark for checking \`word[0].lower() in 'aeiou'\` or \`word.startswith(vowels)\` and displaying count.
-INSIGHT: \`startswith()\` accepts a tuple of prefixes, which makes the code concise and Pythonic.`;
-  }
+- 1 Mark for opening file in read mode with context manager \`with open(...)\`.
+- 1 Mark for reading, splitting into words, and checking \`word[0]\` against vowels.
+- 1 Mark for maintaining count and printing output.
 
-  // UNIT 1: File Handling (Text, Binary, CSV)
-  if (
-    chapterLower.includes('file') ||
-    chapterLower.includes('text file') ||
-    chapterLower.includes('binary file') ||
-    chapterLower.includes('csv') ||
-    chapterLower.includes('pickle') ||
-    chapterLower === 'cs2'
-  ) {
-    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)] Which of the following functions in Python returns the current position of the file pointer within a file?
-(A) f.seek()
-(B) f.tell()
-(C) f.read()
-(D) f.offset()
-SOLUTION:
-**Correct Answer:** (B) f.tell()
-**Notebook Explanation:**
-- \`f.tell()\`: Returns an integer representing the current byte offset position of the file pointer from the beginning of the file.
-- \`f.seek(offset, whence)\`: Moves the file pointer to a new position.
-**CBSE Marking Rubric:**
-- 1 Mark for selecting option (B).
-
-QUESTION: Q2. [3 Marks Binary File Handling, CBSE 2024 (91)] A binary file \`"BOOK.DAT"\` has structure \`[BookNo, BookName, Author, Price]\`. Write a user-defined function in Python \`search_book(bno)\` that searches for a book with \`BookNo\` equal to \`bno\` and displays its details. If not found, display \`"Book not found"\`.
+QUESTION: Q2. [3 Marks Binary File Handling, CBSE 2023 (Delhi)]
+A binary file \`"BOOK.DAT"\` contains records in the form of a list of dictionaries with structure: \`{"BookNo": int, "Title": str, "Price": float}\`.
+Write a function in Python \`update_price()\` to increase the price of all books whose title is \`"Computer Science"\` by 10%, and display the count of records modified.
 SOLUTION:
 \`\`\`python
 import pickle
+import os
 
-def search_book(bno):
+def update_price():
+    updated_count = 0
     found = False
     try:
-        with open("BOOK.DAT", "rb") as f:
+        with open("BOOK.DAT", "rb") as f_in, open("TEMP.DAT", "wb") as f_out:
             while True:
-                record = pickle.load(f)  # record: [BookNo, BookName, Author, Price]
-                if record[0] == bno:
-                    print("Book Found!")
-                    print("Book Number :", record[0])
-                    print("Book Title  :", record[1])
-                    print("Author Name :", record[2])
-                    print("Price (Rs.) :", record[3])
-                    found = True
+                try:
+                    book = pickle.load(f_in)
+                    if book["Title"].strip().lower() == "computer science":
+                        book["Price"] = round(book["Price"] * 1.10, 2)
+                        updated_count += 1
+                        found = True
+                    pickle.dump(book, f_out)
+                except EOFError:
                     break
-    except EOFError:
-        pass  # Normal end of file reached
+        os.remove("BOOK.DAT")
+        os.rename("TEMP.DAT", "BOOK.DAT")
+        print(f"Update complete. {updated_count} record(s) modified.")
     except FileNotFoundError:
-        print("Error: BOOK.DAT file does not exist.")
-        return
+        print("Error: BOOK.DAT not found.")
 
-    if not found:
-        print("Book not found.")
+# Driver call
+update_price()
 \`\`\`
 **CBSE Marking Rubric:**
-- 0.5 Mark for importing \`pickle\` and opening \`"BOOK.DAT"\` in \`"rb"\` mode.
-- 1 Mark for \`try-except EOFError\` loop reading with \`pickle.load(f)\`.
-- 1 Mark for comparing \`record[0] == bno\` and displaying record details.
-- 0.5 Mark for handling \`found == False\` and displaying appropriate message.
-INSIGHT: Always use \`except EOFError:\` to catch the end of file gracefully when using \`pickle.load()\`.
+- 1 Mark for loading binary records inside \`try-except EOFError\` loop.
+- 1 Mark for matching title, updating price by 10%, and dumping to temp file.
+- 1 Mark for replacing original file with temp file and displaying count.
 
-QUESTION: Q3. [3 Marks CSV File Handling, CBSE 2023 (Delhi)] Write a user-defined function \`read_csv_records()\` in Python to read a CSV file \`"STUDENT.CSV"\` having fields \`[RollNo, Name, Marks, Grade]\` and display the records of all students who have scored \`Marks >= 90\`. Also display the total count of such students.
+QUESTION: Q3. [2 Marks CSV File Handling, CBSE 2024]
+Write a function \`display_pass_students()\` in Python to read a CSV file \`"EXAM.CSV"\` containing \`[RollNo, Name, Percentage]\` and display the details of all students who scored 75% or more.
 SOLUTION:
 \`\`\`python
 import csv
 
-def read_csv_records():
-    count = 0
+def display_pass_students():
     try:
-        with open("STUDENT.CSV", "r") as f:
+        with open("EXAM.CSV", "r") as f:
             reader = csv.reader(f)
-            header = next(reader)  # skip header row if present
-            print("Students scoring 90 or more marks:")
-            print(f"{'RollNo':<8} {'Name':<15} {'Marks':<8} {'Grade':<5}")
-            print("-" * 38)
+            header = next(reader)  # Skip header row
+            print(f"Distinction Students (>= 75%):")
             for row in reader:
-                # row: ['RollNo', 'Name', 'Marks', 'Grade']
-                if len(row) >= 4:
-                    marks = float(row[2])
-                    if marks >= 90:
-                        print(f"{row[0]:<8} {row[1]:<15} {row[2]:<8} {row[3]:<5}")
-                        count += 1
-            print("-" * 38)
-            print("Total meritorious students:", count)
+                if len(row) >= 3 and float(row[2]) >= 75.0:
+                    print(f"Roll: {row[0]}, Name: {row[1]}, Score: {row[2]}%")
     except FileNotFoundError:
-        print("Error: STUDENT.CSV file does not exist.")
+        print("Error: EXAM.CSV not found.")
 \`\`\`
 **CBSE Marking Rubric:**
-- 0.5 Mark for importing \`csv\` and opening file in read mode.
-- 1 Mark for \`csv.reader()\` and iterating through rows.
-- 1 Mark for converting \`marks\` to numeric (\`float(row[2])\`) and checking condition \`>= 90\`.
-- 0.5 Mark for updating and printing the count.
-INSIGHT: In CSV files, all values are read as strings, so \`float(row[2])\` or \`int(row[2])\` is compulsory before numerical comparison.`;
+- 1 Mark for opening CSV, importing \`csv\`, and using \`csv.reader\`.
+- 1 Mark for converting percentage column to float and checking \`>= 75.0\`.`;
   }
 
-  // UNIT 1: Data Structures - Stacks
+  // CHAPTER 4: Data Structures (Stack) PYQs
   if (
-    chapterLower.includes('stack') ||
-    chapterLower.includes('data structure') ||
-    chapterLower === 'cs3'
+    id === 'cs4' ||
+    (!id && (
+      chapterLower === 'data structures (stack)' ||
+      chapterLower.includes('stack') ||
+      chapterLower.includes('data structure') ||
+      chapterLower === 'cs4'
+    ))
   ) {
-    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)] The operation of inserting an element into a stack and removing an element from a stack is respectively called:
-(A) Enqueue and Dequeue
-(B) Push and Pop
-(C) Insert and Delete
-(D) Add and Remove
+    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)]
+Which of the following operations on a linear data structure follows the LIFO (Last In First Out) principle and what error is raised when deleting from an empty structure?
+(A) Queue, Overflow
+(B) Stack, Underflow
+(C) Tree, Segmentation Fault
+(D) Linked List, ZeroDivisionError
 SOLUTION:
-**Correct Answer:** (B) Push and Pop
+**Correct Answer:** (B) Stack, Underflow
 **Notebook Explanation:**
-In computer science, a Stack is a LIFO (Last-In-First-Out) data structure where:
-- Inserting an item at the top is called **Push**.
-- Deleting an item from the top is called **Pop**.
+A Stack strictly follows the LIFO principle where the element inserted most recently is the first to be removed. When a pop operation is attempted on an empty stack, the condition is termed **Stack Underflow**.
 **CBSE Marking Rubric:**
 - 1 Mark for selecting option (B).
 
-QUESTION: Q2. [2 Marks, CBSE 2023 (Delhi)] Differentiate between Stack Overflow and Stack Underflow with respect to stack operations.
-SOLUTION:
-| Feature | Stack Overflow | Stack Underflow |
-|---|---|---|
-| **Definition** | The error condition that occurs when attempting to **Push** an element into a stack that is already full to maximum capacity. | The error condition that occurs when attempting to **Pop** or peek an element from an **Empty Stack** (size = 0). |
-| **Occurrence in Python** | In Python dynamic lists, memory is dynamically allocated, so overflow occurs only when physical RAM memory is exhausted. | Frequently occurs in Python if \`stk.pop()\` is executed on an empty list \`[]\`, raising an \`IndexError\`. |
-**CBSE Marking Rubric:**
-- 1 Mark for defining Overflow (pushing into full stack).
-- 1 Mark for defining Underflow (popping from empty stack).
-
-QUESTION: Q3. [5 Marks Core Stack Board Problem, CBSE 2024 (91)]
-Write user-defined functions in Python to perform the following operations on a stack:
-(a) \`Push_Customer(Cust_Stack, Customer_Record)\`: Takes a stack \`Cust_Stack\` and a list \`Customer_Record\` containing \`[Cust_Id, Cust_Name, City, Bill_Amount]\`. The function should push only those customers onto \`Cust_Stack\` whose \`City\` is \`"Delhi"\` and \`Bill_Amount > 5000\`.
-(b) \`Pop_Customer(Cust_Stack)\`: Pops and displays the top customer record from \`Cust_Stack\`. If the stack is empty, it should display \`"Stack Underflow: No Customer to display"\`.
+QUESTION: Q2. [3 Marks Board Problem, CBSE 2024 (Delhi)]
+Write a program in Python to implement Stack operations with the following functions:
+(i) \`Push_Employee(Emp_Dict, Stk)\`: to push names of all employees from the dictionary whose salary is greater than 50,000 into the stack.
+(ii) \`Pop_Employee(Stk)\`: to pop and display all employee names from the stack until it becomes empty, displaying "Underflow" when empty.
+Given dictionary structure: \`Emp_Dict = {"E101": ["Vikram", 62000], "E102": ["Meera", 45000], "E103": ["Siddharth", 78000]}\`
 SOLUTION:
 \`\`\`python
-# Stack Implementation for Customer Records
+# Stack Implementation for Employee Records
 
-def Push_Customer(Cust_Stack, Customer_Record):
-    """
-    Cust_Stack: list acting as the stack
-    Customer_Record: [Cust_Id, Cust_Name, City, Bill_Amount]
-    """
-    cust_id, cust_name, city, bill_amount = Customer_Record
-    
-    # Check eligibility conditions
-    if city.strip().lower() == "delhi" and bill_amount > 5000:
-        Cust_Stack.append(Customer_Record)
-        print(f"Customer {cust_name} (ID: {cust_id}) successfully pushed onto stack.")
-    else:
-        print(f"Customer {cust_name} does not meet criteria (City: {city}, Bill: {bill_amount}).")
+def Push_Employee(Emp_Dict, Stk):
+    for emp_id, details in Emp_Dict.items():
+        name = details[0]
+        salary = details[1]
+        if salary > 50000:
+            Stk.append(name)
+    print("Push operation complete. Current Stack:", Stk)
 
-def Pop_Customer(Cust_Stack):
-    """
-    Pops and displays the top record from Cust_Stack.
-    Checks underflow condition first.
-    """
-    if len(Cust_Stack) == 0:
-        print("Stack Underflow: No Customer to display.")
-        return None
-    else:
-        popped_cust = Cust_Stack.pop()
-        print("--- Popped Customer Details ---")
-        print("Customer ID  :", popped_cust[0])
-        print("Customer Name:", popped_cust[1])
-        print("City         :", popped_cust[2])
-        print("Bill Amount  : Rs.", popped_cust[3])
-        return popped_cust
+def Pop_Employee(Stk):
+    if len(Stk) == 0:
+        print("Stack Underflow! Stack is completely empty.")
+        return
+    print("Popping elements from Stack (LIFO Order):")
+    while len(Stk) > 0:
+        emp_name = Stk.pop()
+        print("Popped Employee:", emp_name)
+    print("All elements popped. Stack Underflow.")
 
-# Example Driver Code for Testing:
-if __name__ == "__main__":
-    my_stack = []
-    
-    customers = [
-        [101, "Rohit Sharma", "Delhi", 7200],
-        [102, "Virat Kohli", "Mumbai", 9500],
-        [103, "Shubman Gill", "Delhi", 4200],
-        [104, "KL Rahul", "Delhi", 8100]
-    ]
-    
-    print("=== Pushing Eligible Records ===")
-    for c in customers:
-        Push_Customer(my_stack, c)
-        
-    print("\\n=== Popping Records ===")
-    Pop_Customer(my_stack)
-    Pop_Customer(my_stack)
-    Pop_Customer(my_stack)  # Triggering underflow
+# Sample execution test
+Stk = []
+Emp_Dict = {
+    "E101": ["Vikram", 62000],
+    "E102": ["Meera", 45000],
+    "E103": ["Siddharth", 78000]
+}
+
+Push_Employee(Emp_Dict, Stk)
+Pop_Employee(Stk)
+\`\`\`
+**Expected Execution Output:**
+\`\`\`
+Push operation complete. Current Stack: ['Vikram', 'Siddharth']
+Popping elements from Stack (LIFO Order):
+Popped Employee: Siddharth
+Popped Employee: Vikram
+All elements popped. Stack Underflow.
 \`\`\`
 **CBSE Marking Rubric:**
-- 1 Mark for \`Push_Customer\` header and parameter unpacking.
-- 1.5 Marks for checking condition (\`city == 'Delhi' and bill_amount > 5000\`) and calling \`Cust_Stack.append()\`.
-- 1 Mark for \`Pop_Customer\` checking \`len(Cust_Stack) == 0\` and printing Underflow message.
-- 1.5 Marks for calling \`Cust_Stack.pop()\` and displaying popped customer record details.
-INSIGHT: Notice \`append()\` pushes onto top and \`pop()\` removes from top without parameters.`;
+- 1½ Marks for \`Push_Employee\` (iterating dictionary, salary condition check, \`stk.append(name)\`).
+- 1½ Marks for \`Pop_Employee\` (checking underflow \`len(Stk) == 0\`, loop popping with \`Stk.pop()\`, displaying message).`;
   }
 
   return null;

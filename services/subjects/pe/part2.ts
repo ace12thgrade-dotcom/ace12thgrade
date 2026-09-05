@@ -3,14 +3,19 @@
 // Master Revision Notes & Formula Blueprint
 // Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
 
-export function getPEPart2Notes(chapterLower: string): string | null {
+export function getPEPart2Notes(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
   // FULL REVISION / MASTER PHYSICAL EDUCATION REVISION BOOK
   if (
-    chapterLower.includes('revision') ||
-    chapterLower.includes('full') ||
-    chapterLower.includes('master') ||
-    chapterLower.includes('summary') ||
-    chapterLower === 'pe_all'
+    id === 'pe_rev' ||
+    id === 'pe_all' ||
+    (!id && (
+      chapterLower === 'full subject revision' ||
+      chapterLower.includes('full subject revision') ||
+      chapterLower.includes('master revision') ||
+      chapterLower === 'pe_rev'
+    ))
   ) {
     return `TOPIC: CBSE Class 12 Physical Education Complete Master Revision Capsule (2026-27 Pattern)
 Master Notebook Revision Book - Comprehensive high-yield synthesis covering tournament fixtures, postural corrections, yogic asanas, fitness testing formulas, physiological adaptations, biomechanical principles, and sports training methods.
@@ -55,12 +60,15 @@ Master Notebook Revision Book - Comprehensive high-yield synthesis covering tour
 
   // CHAPTER 6: Test and Measurement in Sports
   if (
-    chapterLower.includes('test') ||
-    chapterLower.includes('measurement') ||
-    chapterLower.includes('harvard') ||
-    chapterLower.includes('rikli') ||
-    chapterLower.includes('fitness test') ||
-    chapterLower === 'pe6'
+    id === 'pe6' ||
+    (!id && (
+      chapterLower === 'test & measurement' ||
+      chapterLower.includes('test & measurement') ||
+      chapterLower.includes('test and measurement') ||
+      chapterLower.includes('harvard step') ||
+      chapterLower.includes('rikli') ||
+      chapterLower === 'pe6'
+    ))
   ) {
     return `TOPIC: Chapter 6: Test and Measurement in Sports
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -102,12 +110,14 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 7: Physiology and Injuries in Sports
   if (
-    chapterLower.includes('physiology') ||
-    chapterLower.includes('injur') ||
-    chapterLower.includes('pricer') ||
-    chapterLower.includes('sprain') ||
-    chapterLower.includes('strain') ||
-    chapterLower === 'pe7'
+    id === 'pe7' ||
+    (!id && (
+      chapterLower === 'physiology & injuries' ||
+      chapterLower.includes('physiology & injuries') ||
+      chapterLower.includes('physiology and injuries') ||
+      chapterLower.includes('pricer') ||
+      chapterLower === 'pe7'
+    ))
   ) {
     return `TOPIC: Chapter 7: Physiology and Injuries in Sports
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -152,13 +162,15 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 8: Biomechanics and Sports
   if (
-    chapterLower.includes('biomechanic') ||
-    chapterLower.includes('lever') ||
-    chapterLower.includes('equilibrium') ||
-    chapterLower.includes('gravity') ||
-    chapterLower.includes('friction') ||
-    chapterLower.includes('projectile') ||
-    chapterLower === 'pe8'
+    id === 'pe8' ||
+    (!id && (
+      chapterLower === 'biomechanics & sports' ||
+      chapterLower.includes('biomechanics & sports') ||
+      chapterLower.includes('biomechanics and sports') ||
+      chapterLower.includes('biomechanic') ||
+      chapterLower.includes('newton') ||
+      chapterLower === 'pe8'
+    ))
   ) {
     return `TOPIC: Chapter 8: Biomechanics and Sports
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -200,11 +212,14 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 9: Psychology and Sports
   if (
-    chapterLower.includes('psychology') ||
-    chapterLower.includes('personality') ||
-    chapterLower.includes('motivation') ||
-    chapterLower.includes('aggression') ||
-    chapterLower === 'pe9'
+    id === 'pe9' ||
+    (!id && (
+      chapterLower === 'psychology & sports' ||
+      chapterLower.includes('psychology & sports') ||
+      chapterLower.includes('psychology and sports') ||
+      chapterLower.includes('personality') ||
+      chapterLower === 'pe9'
+    ))
   ) {
     return `TOPIC: Chapter 9: Psychology and Sports
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -240,13 +255,13 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 10: Training in Sports
   if (
-    chapterLower.includes('training') ||
-    chapterLower.includes('strength') ||
-    chapterLower.includes('endurance') ||
-    chapterLower.includes('speed') ||
-    chapterLower.includes('flexibility') ||
-    chapterLower.includes('circuit') ||
-    chapterLower === 'pe10'
+    id === 'pe10' ||
+    (!id && (
+      chapterLower === 'training in sports' ||
+      chapterLower.includes('training in sports') ||
+      chapterLower.includes('fartlek') ||
+      chapterLower === 'pe10'
+    ))
   ) {
     return `TOPIC: Chapter 10: Training in Sports
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).

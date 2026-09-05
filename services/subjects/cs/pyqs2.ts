@@ -1,15 +1,26 @@
 // services/subjects/cs/pyqs2.ts
 // Unit 2: Computer Networks & Unit 3: SQL & Python-MySQL Connectivity Solved Board PYQs
+// Dedicated PYQs for chapters:
+// - cs5: Computer Networks
+// - cs6: Database Concepts
+// - cs7: Structured Query Language
+// - cs8: Python-SQL Interface
+// - cs_rev: Full Subject Revision
 // Authentic recent CBSE Board questions with comprehensive notebook-style solutions.
 
-export function getCSPart2PYQs(chapterLower: string): string | null {
+export function getCSPart2PYQs(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
   // FULL REVISION / MASTER PYQ BANK
   if (
-    chapterLower.includes('revision') ||
-    chapterLower.includes('full') ||
-    chapterLower.includes('master') ||
-    chapterLower.includes('summary') ||
-    chapterLower === 'cs_all'
+    id === 'cs_rev' ||
+    id === 'cs_all' ||
+    (!id && (
+      chapterLower === 'full subject revision' ||
+      chapterLower.includes('full subject revision') ||
+      chapterLower.includes('master revision') ||
+      chapterLower === 'cs_rev'
+    ))
   ) {
     return `QUESTION: Q1. [5 Marks Master Networks Case Study, CBSE 2024 (91)]
 "TechNova Educational Institute" is setting up its new campus in Bengaluru with four main buildings:
@@ -66,14 +77,18 @@ SOLUTION:
 INSIGHT: For cable layout, always calculate total length for the bus topology (e.g. 220 m) to impress examiners.`;
   }
 
-  // UNIT 2: Computer Networks
+  // CHAPTER 5: Computer Networks PYQs
   if (
-    chapterLower.includes('network') ||
-    chapterLower.includes('communication') ||
-    chapterLower.includes('internet') ||
-    chapterLower === 'cs4'
+    id === 'cs5' ||
+    (!id && (
+      chapterLower === 'computer networks' ||
+      chapterLower.includes('computer networks') ||
+      (chapterLower.includes('network') && !chapterLower.includes('neural')) ||
+      chapterLower === 'cs5'
+    ))
   ) {
-    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)] Which of the following transmission media works on the principle of Total Internal Reflection (TIR) and is completely immune to Electromagnetic Interference (EMI)?
+    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)]
+Which of the following transmission media works on the principle of Total Internal Reflection (TIR) and is completely immune to Electromagnetic Interference (EMI)?
 (A) Twisted Pair Cable
 (B) Coaxial Cable
 (C) Optical Fiber Cable
@@ -101,7 +116,7 @@ QUESTION: Q3. [2 Marks, CBSE 2024 (91)] Expand and explain the functions of:
 (b) POP3.
 SOLUTION:
 **(a) SMTP (Simple Mail Transfer Protocol):**
-- Protocol used for **sending (pushing) emails** from an email client to the outgoing mail server, and for transferring emails between mail transfer agents (MTAs) across the Internet. Operates by default on TCP port 25 or 587.
+- Protocol used for **sending (pushing) emails** from an email client to the outgoing mail server, and for transferring emails between mail transfer agents across the Internet. Operates by default on TCP port 25 or 587.
 **(b) POP3 (Post Office Protocol Version 3):**
 - Protocol used by email clients to **retrieve and download emails** from a remote mail server to a local client device. Once downloaded, emails are typically deleted from the server. Operates by default on TCP port 110.
 **CBSE Marking Rubric:**
@@ -109,15 +124,18 @@ SOLUTION:
 - 1 Mark for POP3 expansion and retrieval function.`;
   }
 
-  // UNIT 3: Database Management & SQL
+  // CHAPTER 6: Database Concepts PYQs
   if (
-    chapterLower.includes('database') ||
-    chapterLower.includes('sql') ||
-    chapterLower.includes('dbms') ||
-    chapterLower.includes('rdbms') ||
-    chapterLower === 'cs5'
+    id === 'cs6' ||
+    (!id && (
+      chapterLower === 'database concepts' ||
+      chapterLower.includes('database concepts') ||
+      chapterLower.includes('relational model') ||
+      chapterLower === 'cs6'
+    ))
   ) {
-    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)] Consider a table \`STUDENT\` with 6 columns and 25 rows. If 5 new rows are inserted and 1 column is deleted, the new Degree and Cardinality of the table will be:
+    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (91)]
+Consider a table \`STUDENT\` with 6 columns and 25 rows. If 5 new rows are inserted and 1 column is deleted, the new Degree and Cardinality of the table will be:
 (A) Degree = 5, Cardinality = 30
 (B) Degree = 30, Cardinality = 5
 (C) Degree = 6, Cardinality = 25
@@ -132,107 +150,171 @@ SOLUTION:
 **CBSE Marking Rubric:**
 - 1 Mark for selecting option (A).
 
-QUESTION: Q2. [4 Marks SQL Query Problem, CBSE 2024 (91)]
+QUESTION: Q2. [2 Marks, CBSE 2023 (Delhi)]
+Explain the difference between a Candidate Key and an Alternate Key with a suitable example.
+SOLUTION:
+**Definitions & Contrast:**
+- **Candidate Key:** Any attribute or minimal set of attributes that is uniquely capable of identifying each record in a relation. A relation may have one or more candidate keys.
+- **Alternate Key:** A candidate key that is **NOT selected** as the primary key of the table.
+**Concrete Example:**
+Consider a table \`STUDENT(AdmNo, RollNo, Name, Email)\`:
+- Both \`AdmNo\` and \`RollNo\` can uniquely identify a student; therefore, both are **Candidate Keys**.
+- If the database designer selects \`AdmNo\` as the **Primary Key**, then \`RollNo\` becomes the **Alternate Key**.
+**CBSE Marking Rubric:**
+- 1 Mark for clear definitions of candidate vs alternate key.
+- 1 Mark for illustrative relational example.
+
+QUESTION: Q3. [2 Marks, CBSE 2024]
+What is Referential Integrity? Which constraint in SQL is used to enforce it?
+SOLUTION:
+**Referential Integrity:**
+- A database rule ensuring that relationships between tables remain consistent. It dictates that any foreign key value in a child table must match an existing primary key value in the referenced parent table, or must be NULL.
+- It prevents orphaned records and accidental deletion of referenced rows.
+**SQL Constraint:**
+- Enforced using the **\`FOREIGN KEY ... REFERENCES parent_table(primary_key_col)\`** constraint.
+**CBSE Marking Rubric:**
+- 1 Mark for explaining referential consistency rule.
+- 1 Mark for identifying the FOREIGN KEY REFERENCES constraint.`;
+  }
+
+  // CHAPTER 7: Structured Query Language PYQs
+  if (
+    id === 'cs7' ||
+    (!id && (
+      chapterLower === 'structured query language' ||
+      chapterLower.includes('structured query language') ||
+      chapterLower === 'sql' ||
+      chapterLower === 'cs7'
+    ))
+  ) {
+    return `QUESTION: Q1. [4 Marks SQL Query Problem, CBSE 2024 (91)]
 Consider the following table \`TEACHER\`:
 | TID | TName | Department | Salary | DateOfJoin | Gender |
 |---|---|---|---|---|---|
 | T101 | Ananya Sharma | Computer | 65000 | 2018-05-12 | F |
 | T102 | Rajesh Verma | Physics | 72000 | 2015-08-20 | M |
-| T103 | Sunita Mehra | Chemistry | 58000 | 2019-11-15 | F |
-| T104 | Vikram Singh | Computer | 80000 | 2012-03-10 | M |
-| T105 | Kavita Rao | Mathematics | 62000 | 2020-01-25 | F |
-| T106 | Alok Nath | Physics | 54000 | 2021-07-18 | M |
+| T103 | Sunita Roy | Chemistry | 68000 | 2019-11-04 | F |
+| T104 | Amit Mehra | Computer | 75000 | 2014-03-15 | M |
+| T105 | Priya Nair | Mathematics| 62000 | 2021-07-01 | F |
 
-Write SQL queries for the following:
-(a) Display TName, Department, and Salary of all teachers whose Salary is between 60000 and 75000 (inclusive).
-(b) Display the Department and the average salary of teachers in each department having more than 1 teacher.
-(c) Display the details of all teachers whose TName ends with the letter 'a'.
-(d) Increase the salary of all teachers in the 'Computer' department by 10%.
+Write SQL commands for the following:
+(a) To display details of all teachers whose salary is between 65000 and 72000 (both inclusive).
+(b) To display the Department and average salary of each department having more than 1 teacher.
+(c) To display the names of teachers whose name begins with 'A'.
+(d) To increase the salary of all teachers in the 'Computer' department by 5000.
 SOLUTION:
-**(a) Query for Salary Range:**
+**(a) Salary Range Query:**
 \`\`\`sql
-SELECT TName, Department, Salary
-FROM TEACHER
-WHERE Salary BETWEEN 60000 AND 75000;
+SELECT * FROM TEACHER
+WHERE Salary BETWEEN 65000 AND 72000;
 \`\`\`
-*(Alternative: \`WHERE Salary >= 60000 AND Salary <= 75000;\`)*
 
-**(b) Query for Department Average Salary with Group Filter:**
+**(b) Department Summary with GROUP BY & HAVING:**
 \`\`\`sql
-SELECT Department, AVG(Salary) AS Avg_Salary
+SELECT Department, AVG(Salary)
 FROM TEACHER
 GROUP BY Department
 HAVING COUNT(*) > 1;
 \`\`\`
 
-**(c) Query for Pattern Matching:**
+**(c) Pattern Matching with LIKE:**
 \`\`\`sql
-SELECT *
-FROM TEACHER
-WHERE TName LIKE '%a';
+SELECT TName FROM TEACHER
+WHERE TName LIKE 'A%';
 \`\`\`
 
-**(d) DML Update Query:**
+**(d) DML Update Statement:**
 \`\`\`sql
 UPDATE TEACHER
-SET Salary = Salary * 1.10
+SET Salary = Salary + 5000
 WHERE Department = 'Computer';
 \`\`\`
 **CBSE Marking Rubric:**
-- 1 Mark for query (a) using BETWEEN or >= AND <=.
-- 1 Mark for query (b) using GROUP BY Department HAVING COUNT(*) > 1.
-- 1 Mark for query (c) using LIKE '%a'.
-- 1 Mark for query (d) using UPDATE ... SET Salary = Salary * 1.10 WHERE ...
+- 1 Mark for (a) using BETWEEN ... AND.
+- 1 Mark for (b) GROUP BY Department with HAVING COUNT(*) > 1.
+- 1 Mark for (c) WHERE TName LIKE 'A%'.
+- 1 Mark for (d) UPDATE TEACHER SET ... WHERE.`;
+  }
 
-QUESTION: Q3. [3 Marks Python-MySQL Connectivity, CBSE 2023 (Delhi)]
-Write a Python program using \`mysql.connector\` to connect to a MySQL database \`"CompanyDB"\` on localhost with user \`"root"\` and password \`"admin123"\`. The program should query and display the \`EmpId\`, \`EmpName\`, and \`Designation\` of all employees whose \`Salary > 50000\` from table \`EMPLOYEE\`.
+  // CHAPTER 8: Python-SQL Interface PYQs
+  if (
+    id === 'cs8' ||
+    (!id && (
+      chapterLower === 'python-sql interface' ||
+      chapterLower.includes('python-sql') ||
+      chapterLower.includes('python sql') ||
+      chapterLower.includes('connectivity') ||
+      chapterLower.includes('connector') ||
+      chapterLower === 'cs8'
+    ))
+  ) {
+    return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024]
+Which of the following methods of the cursor object returns the next single row of a query result set as a tuple, and what does it return when no more rows are available?
+(A) fetchall(), empty list
+(B) fetchone(), None
+(C) fetchmany(), 0
+(D) rowcount, -1
+SOLUTION:
+**Correct Answer:** (B) fetchone(), None
+**Notebook Explanation:**
+The \`cur.fetchone()\` method retrieves the next individual row from the active cursor result set as a Python tuple. When all records have been consumed (EOF), it returns the special singleton value \`None\`.
+**CBSE Marking Rubric:**
+- 1 Mark for selecting option (B).
+
+QUESTION: Q2. [3 Marks, CBSE 2024 (Delhi)]
+Write a Python script using the \`mysql.connector\` module to connect to a database named \`"HOSPITAL"\` on localhost with username \`"root"\` and password \`"med123"\`. Fetch and display the \`DoctorID\`, \`DoctorName\`, and \`Specialization\` of all doctors whose specialization is \`"Cardiology"\`.
 SOLUTION:
 \`\`\`python
 import mysql.connector
 
-def fetch_high_earners():
+def display_cardiologists():
     try:
-        # Step 1: Connect to MySQL Server
+        # Step 1: Establish connection
         con = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="admin123",
-            database="CompanyDB"
+            password="med123",
+            database="HOSPITAL"
         )
         
-        if con.is_connected():
-            cursor = con.cursor()
+        # Step 2: Create cursor
+        cur = con.cursor()
+        
+        # Step 3: Execute query with parameterization
+        sql = "SELECT DoctorID, DoctorName, Specialization FROM Doctor WHERE Specialization = %s"
+        cur.execute(sql, ("Cardiology",))
+        
+        # Step 4: Fetch and print all results
+        records = cur.fetchall()
+        print("--- Cardiology Specialists ---")
+        for doc in records:
+            print(f"ID: {doc[0]} | Name: {doc[1]} | Spec: {doc[2]}")
             
-            # Step 2: Execute SQL Query
-            query = "SELECT EmpId, EmpName, Designation, Salary FROM EMPLOYEE WHERE Salary > 50000;"
-            cursor.execute(query)
-            
-            # Step 3: Fetch and Display records
-            records = cursor.fetchall()
-            
-            print(f"{'EmpId':<8} {'EmpName':<20} {'Designation':<20} {'Salary':<10}")
-            print("=" * 60)
-            for row in records:
-                print(f"{row[0]:<8} {row[1]:<20} {row[2]:<20} Rs.{row[3]:<10}")
-            print("=" * 60)
-            print(f"Total eligible employees: {cursor.rowcount}")
-            
-            # Step 4: Clean up
-            cursor.close()
-            con.close()
-            
+        # Step 5: Clean up
+        cur.close()
+        con.close()
+        
     except mysql.connector.Error as err:
-        print("Database Error:", err)
+        print("Database connection error:", err)
 
-if __name__ == "__main__":
-    fetch_high_earners()
+# Call function
+display_cardiologists()
 \`\`\`
 **CBSE Marking Rubric:**
-- 0.5 Mark for \`import mysql.connector\` and \`mysql.connector.connect()\`.
-- 0.5 Mark for creating cursor with \`con.cursor()\`.
-- 1 Mark for executing SQL \`SELECT ... WHERE Salary > 50000\`.
-- 1 Mark for \`cursor.fetchall()\` and iterating through records to display.
-INSIGHT: For read queries (SELECT), \`con.commit()\` is not required, but \`con.close()\` is good practice.`;
+- 1 Mark for correct \`mysql.connector.connect()\` call with all 4 parameters.
+- 1 Mark for \`cur.execute()\` and \`cur.fetchall()\`.
+- 1 Mark for iterating fetched records and closing connection.
+
+QUESTION: Q3. [2 Marks, CBSE 2023]
+Why is \`con.commit()\` required after an \`INSERT\` or \`UPDATE\` statement in Python MySQL connectivity, but not after a \`SELECT\` statement?
+SOLUTION:
+**Role of con.commit():**
+- In relational databases, DML operations (INSERT, UPDATE, DELETE) run within a transaction block. These changes are initially held in temporary transaction buffers.
+- Calling \`con.commit()\` instructs MySQL to **permanently write (commit)** the changes to the disk database. Without \`commit()\`, all modifications are discarded when the session ends.
+- In contrast, \`SELECT\` is a read-only query that does not modify stored data; therefore, no commit is necessary.
+**CBSE Marking Rubric:**
+- 1 Mark for explaining temporary transaction buffer vs disk write.
+- 1 Mark for contrasting data modification with read-only SELECT.`;
   }
 
   return null;

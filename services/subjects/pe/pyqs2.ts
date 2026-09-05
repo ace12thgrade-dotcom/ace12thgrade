@@ -1,15 +1,27 @@
 // services/subjects/pe/pyqs2.ts
 // Chapters 6-10: Test & Measurement, Physiology & Injuries, Biomechanics, Psychology, Training in Sports
+// Dedicated PYQs for:
+// - pe6: Test & Measurement
+// - pe7: Physiology & Injuries
+// - pe8: Biomechanics & Sports
+// - pe9: Psychology & Sports
+// - pe10: Training in Sports
+// - pe_rev: Full Subject Revision
 // Master Revision Bank & Authentic CBSE Board Solved PYQs (2020-2024).
 
-export function getPEPart2PYQs(chapterLower: string): string | null {
+export function getPEPart2PYQs(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
   // FULL REVISION PYQS / COMPREHENSIVE MOCK SET
   if (
-    chapterLower.includes('revision') ||
-    chapterLower.includes('full') ||
-    chapterLower.includes('master') ||
-    chapterLower.includes('summary') ||
-    chapterLower === 'pe_all'
+    id === 'pe_rev' ||
+    id === 'pe_all' ||
+    (!id && (
+      chapterLower === 'full subject revision' ||
+      chapterLower.includes('full subject revision') ||
+      chapterLower.includes('master revision') ||
+      chapterLower === 'pe_rev'
+    ))
   ) {
     return `QUESTION: Q1. [3 Marks Formula & Calculation, CBSE 2024 (75)]
 An athlete completes the Harvard Step Test for 300 seconds. The post-exercise pulse counts recorded are:
@@ -50,8 +62,8 @@ PRICER is the standardized acute first-aid protocol applied within the first 24 
 6. **R - Rehabilitation:** Supervised progressive rehabilitation to restore proprioception and joint mobility.
 
 **Physiological Importance of Ice (Cryotherapy):**
-- **Vasoconstriction:** Cold induces immediate constriction of local arterioles and capillaries, significantly reducing hemorrhage and internal hematoma formation.
-- **Reduction of Secondary Hypoxia:** Decreases the metabolic rate of surrounding uninjured cells, preserving them from secondary hypoxic necrosis.
+- **Vasoconstriction:** Causes immediate constriction of local arterioles and capillaries, dramatically decreasing blood flow and halting internal hemorrhage and hematoma.
+- **Reduces Cellular Metabolism:** Drops the metabolic oxygen demand of surrounding healthy tissues, preventing secondary ischemic hypoxia/cell death.
 - **Analgesia:** Slows nerve conduction velocity of pain nociceptors, acting as a natural local anesthetic.
 **CBSE Marking Rubric:**
 - 2.5 Marks for listing and explaining all 6 components of PRICER.
@@ -60,12 +72,15 @@ PRICER is the standardized acute first-aid protocol applied within the first 24 
 
   // CHAPTER 6: Test and Measurement in Sports
   if (
-    chapterLower.includes('test') ||
-    chapterLower.includes('measurement') ||
-    chapterLower.includes('harvard') ||
-    chapterLower.includes('rikli') ||
-    chapterLower.includes('fitness test') ||
-    chapterLower === 'pe6'
+    id === 'pe6' ||
+    (!id && (
+      chapterLower === 'test & measurement' ||
+      chapterLower.includes('test & measurement') ||
+      chapterLower.includes('test and measurement') ||
+      chapterLower.includes('harvard step') ||
+      chapterLower.includes('rikli') ||
+      chapterLower === 'pe6'
+    ))
   ) {
     return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (75)] Which test item of the Senior Citizen Fitness Test (Rikli and Jones) assesses lower body muscular strength?
 (A) Arm Curl Test
@@ -102,12 +117,14 @@ SOLUTION:
 
   // CHAPTER 7: Physiology and Injuries in Sports
   if (
-    chapterLower.includes('physiology') ||
-    chapterLower.includes('injur') ||
-    chapterLower.includes('pricer') ||
-    chapterLower.includes('sprain') ||
-    chapterLower.includes('strain') ||
-    chapterLower === 'pe7'
+    id === 'pe7' ||
+    (!id && (
+      chapterLower === 'physiology & injuries' ||
+      chapterLower.includes('physiology & injuries') ||
+      chapterLower.includes('physiology and injuries') ||
+      chapterLower.includes('pricer') ||
+      chapterLower === 'pe7'
+    ))
   ) {
     return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (75)] A severe stretch or tear in a ligament that connects bone to bone at a joint is called:
 (A) Strain
@@ -144,13 +161,15 @@ SOLUTION:
 
   // CHAPTER 8: Biomechanics and Sports
   if (
-    chapterLower.includes('biomechanic') ||
-    chapterLower.includes('lever') ||
-    chapterLower.includes('equilibrium') ||
-    chapterLower.includes('gravity') ||
-    chapterLower.includes('friction') ||
-    chapterLower.includes('projectile') ||
-    chapterLower === 'pe8'
+    id === 'pe8' ||
+    (!id && (
+      chapterLower === 'biomechanics & sports' ||
+      chapterLower.includes('biomechanics & sports') ||
+      chapterLower.includes('biomechanics and sports') ||
+      chapterLower.includes('biomechanic') ||
+      chapterLower.includes('newton') ||
+      chapterLower === 'pe8'
+    ))
   ) {
     return `QUESTION: Q1. [3 Marks, CBSE 2024 (75)] Identify the class of lever operating during a bicep curl in human movement. Draw a neat diagram labeling Fulcrum, Effort, and Load, and explain why this lever provides high speed of movement.
 SOLUTION:
@@ -191,11 +210,14 @@ SOLUTION:
 
   // CHAPTER 9: Psychology and Sports
   if (
-    chapterLower.includes('psychology') ||
-    chapterLower.includes('personality') ||
-    chapterLower.includes('motivation') ||
-    chapterLower.includes('aggression') ||
-    chapterLower === 'pe9'
+    id === 'pe9' ||
+    (!id && (
+      chapterLower === 'psychology & sports' ||
+      chapterLower.includes('psychology & sports') ||
+      chapterLower.includes('psychology and sports') ||
+      chapterLower.includes('personality') ||
+      chapterLower === 'pe9'
+    ))
   ) {
     return `QUESTION: Q1. [3 Marks, CBSE 2024 (75)] Differentiate between Hostile Aggression, Instrumental Aggression, and Assertive Behavior in sports with one example for each.
 SOLUTION:
@@ -219,13 +241,13 @@ SOLUTION:
 
   // CHAPTER 10: Training in Sports
   if (
-    chapterLower.includes('training') ||
-    chapterLower.includes('strength') ||
-    chapterLower.includes('endurance') ||
-    chapterLower.includes('speed') ||
-    chapterLower.includes('flexibility') ||
-    chapterLower.includes('circuit') ||
-    chapterLower === 'pe10'
+    id === 'pe10' ||
+    (!id && (
+      chapterLower === 'training in sports' ||
+      chapterLower.includes('training in sports') ||
+      chapterLower.includes('fartlek') ||
+      chapterLower === 'pe10'
+    ))
   ) {
     return `QUESTION: Q1. [3 Marks, CBSE 2024 (75)] Differentiate between Isometric, Isotonic, and Isokinetic strength development methods.
 SOLUTION:

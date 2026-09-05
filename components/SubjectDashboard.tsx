@@ -958,19 +958,6 @@ const ChapterView: React.FC<{
           >
             ←
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                {isRevision ? 'Master Syllabus Revision' : 'Chapter Study Module'}
-              </span>
-              <span className="text-[11px] font-bold opacity-70 uppercase tracking-wide">
-                {subject.name} • CBSE 2026-27
-              </span>
-            </div>
-            <h2 className="text-base lg:text-xl font-black tracking-tight line-clamp-1">
-              {chapter.title}
-            </h2>
-          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
@@ -986,7 +973,7 @@ const ChapterView: React.FC<{
             </button>
           )}
 
-          {/* 5 Dedicated Study View Tabs */}
+          {/* Dedicated Study View Tabs */}
           <div className="flex p-1 rounded-xl bg-black/5 dark:bg-white/5 border border-slate-300/60 dark:border-slate-700 overflow-x-auto no-scrollbar">
             <button 
               onClick={() => setTabMode('notes')}
@@ -1005,12 +992,6 @@ const ChapterView: React.FC<{
               className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'pyqs' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
             >
               {isRevision ? '🎯 15 Full PYQs' : '🎯 4-5 Solved PYQs'}
-            </button>
-            <button 
-              onClick={() => setTabMode('diagrams')}
-              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${tabMode === 'diagrams' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
-            >
-              🧪 Diagrams
             </button>
             <button 
               onClick={() => setTabMode('books')}
@@ -1104,19 +1085,6 @@ const ChapterView: React.FC<{
             ))}
           </div>
         </div>
-
-        {/* AI Sync Button */}
-        <button 
-          disabled={isSyncingAI}
-          onClick={() => loadContent(true)}
-          className={`px-3 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm ${
-            isSyncingAI 
-              ? 'bg-slate-700 text-slate-300 cursor-wait' 
-              : 'bg-amber-700 hover:bg-amber-800 text-white'
-          }`}
-        >
-          {isSyncingAI ? 'Syncing...' : '✨ Live AI Refresh'}
-        </button>
       </div>
 
       {/* Main Content Body */}
@@ -1216,54 +1184,23 @@ const ChapterView: React.FC<{
             <div className="p-8 text-center rounded-2xl border border-red-300 bg-red-50 text-red-900">
               <p className="font-black text-base mb-4">{error}</p>
               <button 
-                onClick={() => loadContent(true)}
+                onClick={() => loadContent(false)}
                 className="px-5 py-2 bg-amber-800 text-white font-bold text-xs rounded-xl shadow-md"
               >
-                Retry Live AI Sync
+                Retry Loading
               </button>
             </div>
           ) : (
-            <>
-              {/* Teacher Mode Exam Revision Callout */}
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-indigo-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center text-lg shadow-sm shrink-0">
-                    🎓
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-600 text-white">
-                        AI Teacher Mode
-                      </span>
-                      <span className="text-xs font-bold text-amber-800 dark:text-amber-400">
-                        {teacherLecture.stats.mustKnowCount} 🔴 Must Know • {teacherLecture.stats.importantCount} 🟡 Important
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
-                      10-minute audio exam masterclass. Explains essential formulas, laws, and common mistakes in conversational natural teacher tone.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsTeacherReaderOpen(true)}
-                  className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-black rounded-xl shrink-0 flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95"
-                >
-                  <span>Listen to Teacher</span>
-                  <span>▶</span>
-                </button>
-              </div>
-
-              <NaturalNotebookViewer 
-                content={notesContent} 
-                pyqContent={pyqContent}
-                subject={subject.name}
-                chapterTitle={chapter.title}
-                tabMode={tabMode}
-                isRevision={isRevision}
-                config={{ theme, font, size: fontSize }}
-                onSelectTab={(tab) => setTabMode(tab)}
-              />
-            </>
+            <NaturalNotebookViewer 
+              content={notesContent} 
+              pyqContent={pyqContent}
+              subject={subject.name}
+              chapterTitle={chapter.title}
+              tabMode={tabMode}
+              isRevision={isRevision}
+              config={{ theme, font, size: fontSize }}
+              onSelectTab={(tab) => setTabMode(tab)}
+            />
           )}
         </div>
       </div>

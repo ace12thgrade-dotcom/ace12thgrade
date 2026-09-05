@@ -1,25 +1,26 @@
 // englishData.ts - Complete CBSE Class 12 English Core Knowledge Base (2026-27 Pattern)
 // Modularized into:
-// - services/subjects/english/part1.ts (Section B Writing Skills & Flamingo Prose)
-// - services/subjects/english/part2.ts (Flamingo Poetry, Vistas Prose + Master Revision)
-// - services/subjects/english/pyqs1.ts (Writing Skills & Flamingo Prose Solved PYQs)
-// - services/subjects/english/pyqs2.ts (Flamingo Poetry & Vistas Solved PYQs + Master Bank)
+// - services/subjects/english/part1.ts (Flamingo Prose ef1-ef8)
+// - services/subjects/english/part2.ts (Flamingo Poetry efp1-efp5, Vistas Prose ev1-ev6, Full Revision e_rev)
+// - services/subjects/english/pyqs1.ts (Flamingo Prose Solved PYQs ef1-ef8)
+// - services/subjects/english/pyqs2.ts (Flamingo Poetry & Vistas Solved PYQs efp1-efp5, ev1-ev6, Full Revision e_rev)
 
 import { getEnglishPart1Notes } from './english/part1';
 import { getEnglishPart2Notes } from './english/part2';
 import { getEnglishPart1PYQs } from './english/pyqs1';
 import { getEnglishPart2PYQs } from './english/pyqs2';
 
-export function getEnglishContent(chapter: string, type: 'notes' | 'pyqs'): string {
+export function getEnglishContent(chapter: string, type: 'notes' | 'pyqs', chapterId?: string): string {
   const lower = chapter.toLowerCase().trim();
+  const id = (chapterId || '').toLowerCase().trim();
 
   if (type === 'notes') {
-    // Check Part 1 (Writing skills & Flamingo prose)
-    const part1Notes = getEnglishPart1Notes(lower);
+    // Check Part 1 (Flamingo prose ef1-ef8)
+    const part1Notes = getEnglishPart1Notes(lower, id);
     if (part1Notes) return part1Notes;
 
-    // Check Part 2 (Poetry, Vistas prose & full revision)
-    const part2Notes = getEnglishPart2Notes(lower);
+    // Check Part 2 (Poetry efp1-efp5, Vistas ev1-ev6, Full revision e_rev)
+    const part2Notes = getEnglishPart2Notes(lower, id);
     if (part2Notes) return part2Notes;
 
     // Default fallback
@@ -33,12 +34,12 @@ export function getEnglishContent(chapter: string, type: 'notes' | 'pyqs'): stri
 INSIGHT: Always incorporate quotes and exact poetic device terminologies into your literary answers.`;
   } else {
     // ENGLISH SOLVED PYQS
-    // Check Part 1 PYQs
-    const part1PYQs = getEnglishPart1PYQs(lower);
+    // Check Part 1 PYQs (Flamingo prose ef1-ef8)
+    const part1PYQs = getEnglishPart1PYQs(lower, id);
     if (part1PYQs) return part1PYQs;
 
-    // Check Part 2 PYQs
-    const part2PYQs = getEnglishPart2PYQs(lower);
+    // Check Part 2 PYQs (Poetry efp1-efp5, Vistas ev1-ev6, Full revision e_rev)
+    const part2PYQs = getEnglishPart2PYQs(lower, id);
     if (part2PYQs) return part2PYQs;
 
     // Default fallback solved PYQs
@@ -79,4 +80,3 @@ SOLUTION:
 INSIGHT: Always enclose the notice in a neat rectangular box using a ruler.`;
   }
 }
-

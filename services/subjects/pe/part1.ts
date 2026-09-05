@@ -2,14 +2,19 @@
 // Chapters 1-5: Management of Sporting Events, Children and Women in Sports, Yoga for Lifestyle Diseases, CWSN, Sports and Nutrition
 // Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
 
-export function getPEPart1Notes(chapterLower: string): string | null {
+export function getPEPart1Notes(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
   // CHAPTER 1: Management of Sporting Events
   if (
-    chapterLower.includes('management') ||
-    chapterLower.includes('event') ||
-    chapterLower.includes('fixture') ||
-    chapterLower.includes('tournament') ||
-    chapterLower === 'pe1'
+    id === 'pe1' ||
+    (!id && (
+      chapterLower === 'management of events' ||
+      chapterLower.includes('management of events') ||
+      chapterLower.includes('sporting events') ||
+      chapterLower.includes('fixture') ||
+      chapterLower === 'pe1'
+    ))
   ) {
     return `TOPIC: Chapter 1: Management of Sporting Events
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -67,11 +72,15 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 2: Children and Women in Sports
   if (
-    chapterLower.includes('women') ||
-    chapterLower.includes('posture') ||
-    chapterLower.includes('deformit') ||
-    chapterLower.includes('female athlete triad') ||
-    chapterLower === 'pe2'
+    id === 'pe2' ||
+    (!id && (
+      chapterLower === 'children & women in sports' ||
+      chapterLower.includes('children & women') ||
+      chapterLower.includes('children and women') ||
+      chapterLower.includes('posture') ||
+      chapterLower.includes('deformit') ||
+      chapterLower === 'pe2'
+    ))
   ) {
     return `TOPIC: Chapter 2: Children and Women in Sports
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -119,13 +128,14 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 3: Yoga as Preventive Measure for Lifestyle Diseases
   if (
-    chapterLower.includes('yoga') ||
-    chapterLower.includes('asana') ||
-    chapterLower.includes('obesity') ||
-    chapterLower.includes('diabetes') ||
-    chapterLower.includes('asthma') ||
-    chapterLower.includes('hypertension') ||
-    chapterLower === 'pe3'
+    id === 'pe3' ||
+    (!id && (
+      chapterLower === 'yoga as preventive measure' ||
+      chapterLower.includes('yoga as preventive') ||
+      chapterLower.includes('preventive measure') ||
+      chapterLower.includes('lifestyle diseases') ||
+      chapterLower === 'pe3'
+    ))
   ) {
     return `TOPIC: Chapter 3: Yoga as Preventive Measure for Lifestyle Diseases
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -172,13 +182,17 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 - Failing to mention contraindications in 5-mark asana questions. Board rubrics deduct 1 full mark if contraindications are omitted.`;
   }
 
-  // CHAPTER 4: CWSN (Children with Special Needs - Divyang)
+  // CHAPTER 4: Physical Ed & Sports for CWSN (Children with Special Needs - Divyang)
   if (
-    chapterLower.includes('cwsn') ||
-    chapterLower.includes('special needs') ||
-    chapterLower.includes('divyang') ||
-    chapterLower.includes('paralympic') ||
-    chapterLower === 'pe4'
+    id === 'pe4' ||
+    (!id && (
+      chapterLower === 'physical ed & sports for cwsn' ||
+      chapterLower.includes('sports for cwsn') ||
+      chapterLower.includes('cwsn') ||
+      chapterLower.includes('special needs') ||
+      chapterLower.includes('divyang') ||
+      chapterLower === 'pe4'
+    ))
   ) {
     return `TOPIC: Chapter 4: Physical Education & Sports for CWSN (Divyang)
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).
@@ -213,11 +227,14 @@ Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (
 
   // CHAPTER 5: Sports and Nutrition
   if (
-    chapterLower.includes('nutrition') ||
-    chapterLower.includes('diet') ||
-    chapterLower.includes('macro') ||
-    chapterLower.includes('micro') ||
-    chapterLower === 'pe5'
+    id === 'pe5' ||
+    (!id && (
+      chapterLower === 'sports & nutrition' ||
+      chapterLower.includes('sports & nutrition') ||
+      chapterLower.includes('sports and nutrition') ||
+      chapterLower.includes('nutrition') ||
+      chapterLower === 'pe5'
+    ))
   ) {
     return `TOPIC: Chapter 5: Sports and Nutrition
 Master Notebook Notes - Strictly aligned with CBSE Class 12 Physical Education (048) NCERT Syllabus (2026-27).

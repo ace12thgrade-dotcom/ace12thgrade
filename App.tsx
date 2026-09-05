@@ -121,22 +121,24 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col min-w-0 relative h-full">
         {/* Clean, Human Top Bar */}
         <header className="h-14 lg:h-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0">
-          <div className="flex-1 max-w-md hidden md:block">
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </span>
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${activeSubject.name} chapters, topics, PYQs...`} 
-                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
-              />
+          {!selectedChapter && (
+            <div className="flex-1 max-w-md hidden md:block">
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${activeSubject.name} chapters, topics, PYQs...`} 
+                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
+                />
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="flex items-center gap-3">
             {/* Show Admin Active badge only when authenticated */}

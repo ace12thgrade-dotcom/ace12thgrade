@@ -27,8 +27,9 @@ const ChatInterface: React.FC = () => {
     try {
       const response = await chatWithTutor(messages, userMsg);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'model', text: 'Bhai, check your internet! Please try again.' }]);
+    } catch (e: any) {
+      const errorMessage = e?.message || 'Failed to connect to AceBot';
+      setMessages(prev => [...prev, { role: 'model', text: `⚠️ ${errorMessage}. Please try again or check your API key / quota in Settings.` }]);
     } finally {
       setIsLoading(false);
     }

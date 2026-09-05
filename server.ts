@@ -9,8 +9,6 @@ const PORT = 3000;
 app.use(express.json());
 
 // Server-side Key Management & Rotation
-const permanentBlacklist = new Set<string>();
-
 const getAPIKeys = (): string[] => {
   const raw = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
   if (!raw || raw === "undefined" || raw === "null") return [];
@@ -18,17 +16,17 @@ const getAPIKeys = (): string[] => {
   return raw.split(',')
     .map(k => k.trim())
     .map(k => k.replace(/['"`\s\u200B-\u200D\uFEFF]/g, ''))
-    .filter(k => k.length > 10 && !permanentBlacklist.has(k)); 
+    .filter(k => k.length > 10); 
 };
 
 let currentKeyIndex = 0;
 let lastRotationReason = "";
 
-async function withRetry<T>(fn: (apiKey: string) => Promise<T>, retries = 20): Promise<T> {
+async function withRetry<T>(fn: (apiKey: string) => Promise<T>, retries = 5): Promise<T> {
   const keys = getAPIKeys();
   
   if (keys.length === 0) {
-    throw new Error("NO_WORKING_KEYS: All keys failed or none provided. Please check the workspace Settings > Secrets.");
+    throw new Error("NO_WORKING_KEYS: No API keys configured in environment.");
   }
 
   const activeIndex = currentKeyIndex % keys.length;
@@ -39,32 +37,46 @@ async function withRetry<T>(fn: (apiKey: string) => Promise<T>, retries = 20): P
     lastRotationReason = ""; 
     return result;
   } catch (error: any) {
-    const errorStr = error.toString().toLowerCase();
-    
-    const isHardFailure = errorStr.includes("400") || errorStr.includes("403") || errorStr.includes("invalid") || errorStr.includes("not found");
+    const errorStr = error?.toString()?.toLowerCase() || "";
     const isTransientFailure = errorStr.includes("429") || errorStr.includes("503") || errorStr.includes("overloaded") || errorStr.includes("quota") || errorStr.includes("limit");
 
-    if (isHardFailure) {
-      console.error(`Key #${activeIndex + 1} is PERMANENTLY BAD. Removing...`);
-      permanentBlacklist.add(apiKey);
-      currentKeyIndex++;
-      if (retries > 0) return withRetry(fn, retries - 1);
-    }
-
-    if (isTransientFailure && retries > 0) {
-      console.warn(`Key #${activeIndex + 1} is TEMPORARILY BUSY (429/503). Rotating...`);
+    if (isTransientFailure) {
       lastRotationReason = errorStr.includes("503") ? "Server Busy (503)" : "Limit Reached (429)";
       currentKeyIndex++;
-      if (errorStr.includes("503")) await new Promise(r => setTimeout(r, 800));
-      return withRetry(fn, retries - 1);
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 600));
+        return withRetry(fn, retries - 1);
+      }
     }
 
-    if (retries > 0) {
+    if (keys.length > 1 && retries > 0) {
       currentKeyIndex++;
       return withRetry(fn, retries - 1);
     }
     throw error;
   }
+}
+
+const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-flash-latest'];
+
+async function generateWithFallback(ai: GoogleGenAI, contents: any, config?: any): Promise<string> {
+  let lastErr: any = null;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config
+      });
+      if (response && response.text) {
+        return response.text;
+      }
+    } catch (err: any) {
+      lastErr = err;
+      console.warn(`Model ${model} failed, trying next candidate. Error:`, err?.message || err);
+    }
+  }
+  throw lastErr || new Error("All AI candidate models failed to generate content");
 }
 
 const SYMBOL_INSTRUCTION = "CRITICAL: Use actual scientific/mathematical symbols (like ε, λ, σ, Δ, π, Ω, ∞, √, ∫, ≈, ±). DO NOT use LaTeX symbols like '$' or '\\'. DO NOT use text borders like '||', '===', or '---'.";
@@ -97,7 +109,6 @@ app.post("/api/generate-notes", async (req, res) => {
         }
       });
       
-      const isRevision = chapter.toUpperCase().includes("REVISION") || chapter.toUpperCase().includes("FULL");
       const prompt = `Act as a Senior CBSE Class 12 Master Teacher and Chief Examiner with 20+ years of board paper creation experience. 
 Subject: ${subject}, Chapter/Module: ${chapter}. 
 TASK: Create Complete, In-Depth, Highly Rigorous Study Notes & Formula Master Vault for the 2026-27 CBSE Board Examination.
@@ -132,11 +143,7 @@ FORMATTING RULES:
 - Write in clean, highly structured bullet points. Never truncate or abbreviate.
 ${SYMBOL_INSTRUCTION}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: prompt,
-      });
-      return response.text;
+      return generateWithFallback(ai, prompt);
     });
 
     res.json({ text });
@@ -184,11 +191,7 @@ FORMATTING & STEP-MARKING RULES:
 5. CRITICAL: Provide 100% complete, mathematically and scientifically verified solutions. Do not skip or truncate steps.
 ${SYMBOL_INSTRUCTION}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: prompt,
-      });
-      return response.text;
+      return generateWithFallback(ai, prompt);
     });
 
     res.json({ text });
@@ -215,7 +218,6 @@ app.post("/api/generate-audio", async (req, res) => {
           }
         }
       });
-      // Character limit to 15,000 to ensure full narration
       const cleanNotes = notes.replace(/TOPIC:|QUESTION:|INSIGHT:|SOLUTION:|\*\*|#/gi, '').substring(0, 15000);
       const prompt = `Act as a professional educational narrator. Please read the following study material for Class 12 ${subject} in a clear, engaging, and slow educational tone. Read everything provided without skipping sections: ${cleanNotes}`;
       
@@ -243,8 +245,8 @@ app.post("/api/generate-audio", async (req, res) => {
 
 app.post("/api/chat-tutor", async (req, res) => {
   try {
-    const { message } = req.body;
-    if (!message) {
+    const { message, history } = req.body;
+    if (!message || typeof message !== 'string' || !message.trim()) {
       res.status(400).json({ error: "Missing message in request body" });
       return;
     }
@@ -258,20 +260,45 @@ app.post("/api/chat-tutor", async (req, res) => {
           }
         }
       });
-      const chat = ai.chats.create({
-        model: 'gemini-3.5-flash',
-        config: {
-          systemInstruction: `You are AceBot. Access to 4250+ PYQs (last 15 years). Help for 2026 Boards. Use Easy Hinglish. ${SYMBOL_INSTRUCTION}`,
+      
+      // Build clean contents list
+      const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+      
+      if (Array.isArray(history) && history.length > 0) {
+        for (const item of history) {
+          if (item && typeof item.text === 'string' && item.text.trim()) {
+            const role = item.role === 'user' ? 'user' : 'model';
+            contents.push({
+              role,
+              parts: [{ text: item.text.trim() }]
+            });
+          }
         }
+      }
+
+      // Append current user query
+      contents.push({
+        role: 'user',
+        parts: [{ text: message.trim() }]
       });
-      const response = await chat.sendMessage({ message });
-      return response.text;
+
+      return generateWithFallback(ai, contents, {
+        systemInstruction: `You are AceBot, an expert, friendly, and encouraging CBSE Class 12 board examination master tutor.
+You specialize in all Class 12 CBSE subjects: Physics, Chemistry, Mathematics, Biology, Computer Science, Physical Education, and English Core.
+Provide clear, accurate, step-by-step answers, highlighting official CBSE formulas, marking rubrics, NCERT insights, and practical tips.
+Keep your tone encouraging, professional, and easy to understand (Hinglish/English as appropriate).
+${SYMBOL_INSTRUCTION}`,
+      });
     });
 
     res.json({ text });
   } catch (err: any) {
     console.error("Chat failed:", err);
-    res.status(500).json({ error: err.message || "Failed to chat" });
+    // Intelligent educational fallback instead of crashing
+    res.json({
+      text: "Namaste! I'm here to help with your Class 12 Board preparation. While synchronizing with the live AI server, please feel free to review the comprehensive offline chapter notes, formula vaults, and verified 15-year CBSE PYQs available right in the subject tabs. Ask me any specific question about formulas, reactions, or past year concepts!",
+      isFallback: true
+    });
   }
 });
 

@@ -1,15 +1,26 @@
 // services/subjects/pe/pyqs1.ts
 // Chapters 1-5: Management of Sporting Events, Children and Women in Sports, Yoga, CWSN, Sports & Nutrition Solved Board PYQs
+// Dedicated PYQs for:
+// - pe1: Management of Events
+// - pe2: Children & Women in Sports
+// - pe3: Yoga as Preventive Measure
+// - pe4: Physical Ed & Sports for CWSN
+// - pe5: Sports & Nutrition
 // Authentic recent CBSE Board questions with comprehensive notebook-style solutions.
 
-export function getPEPart1PYQs(chapterLower: string): string | null {
+export function getPEPart1PYQs(chapterLower: string, chapterId?: string): string | null {
+  const id = (chapterId || '').toLowerCase().trim();
+
   // CHAPTER 1: Management of Sporting Events
   if (
-    chapterLower.includes('management') ||
-    chapterLower.includes('event') ||
-    chapterLower.includes('fixture') ||
-    chapterLower.includes('tournament') ||
-    chapterLower === 'pe1'
+    id === 'pe1' ||
+    (!id && (
+      chapterLower === 'management of events' ||
+      chapterLower.includes('management of events') ||
+      chapterLower.includes('sporting events') ||
+      chapterLower.includes('fixture') ||
+      chapterLower === 'pe1'
+    ))
   ) {
     return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (75)] If 13 teams are participating in a knock-out tournament, what is the total number of byes to be allotted?
 (A) 2
@@ -70,11 +81,15 @@ INSIGHT: Always write down the step-by-step bye allocation rule (Last of Lower, 
 
   // CHAPTER 2: Children and Women in Sports
   if (
-    chapterLower.includes('women') ||
-    chapterLower.includes('posture') ||
-    chapterLower.includes('deformit') ||
-    chapterLower.includes('female athlete triad') ||
-    chapterLower === 'pe2'
+    id === 'pe2' ||
+    (!id && (
+      chapterLower === 'children & women in sports' ||
+      chapterLower.includes('children & women') ||
+      chapterLower.includes('children and women') ||
+      chapterLower.includes('posture') ||
+      chapterLower.includes('deformit') ||
+      chapterLower === 'pe2'
+    ))
   ) {
     return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (75)] An abnormal lateral sideways curvature of the spine is known as:
 (A) Kyphosis
@@ -122,13 +137,14 @@ INSIGHT: Mentioning that low estrogen links amenorrhea directly to osteoporosis 
 
   // CHAPTER 3: Yoga for Lifestyle Diseases
   if (
-    chapterLower.includes('yoga') ||
-    chapterLower.includes('asana') ||
-    chapterLower.includes('obesity') ||
-    chapterLower.includes('diabetes') ||
-    chapterLower.includes('asthma') ||
-    chapterLower.includes('hypertension') ||
-    chapterLower === 'pe3'
+    id === 'pe3' ||
+    (!id && (
+      chapterLower === 'yoga as preventive measure' ||
+      chapterLower.includes('yoga as preventive') ||
+      chapterLower.includes('preventive measure') ||
+      chapterLower.includes('lifestyle diseases') ||
+      chapterLower === 'pe3'
+    ))
   ) {
     return `QUESTION: Q1. [3 Marks, CBSE 2024 (75)] Explain the procedure, benefits, and two contraindications of 'Ardha Matsyendrasana' for the management of Diabetes Mellitus.
 SOLUTION:
@@ -165,11 +181,15 @@ SOLUTION:
 
   // CHAPTER 4: CWSN (Children with Special Needs - Divyang)
   if (
-    chapterLower.includes('cwsn') ||
-    chapterLower.includes('special needs') ||
-    chapterLower.includes('divyang') ||
-    chapterLower.includes('paralympic') ||
-    chapterLower === 'pe4'
+    id === 'pe4' ||
+    (!id && (
+      chapterLower === 'physical ed & sports for cwsn' ||
+      chapterLower.includes('sports for cwsn') ||
+      chapterLower.includes('cwsn') ||
+      chapterLower.includes('special needs') ||
+      chapterLower.includes('divyang') ||
+      chapterLower === 'pe4'
+    ))
   ) {
     return `QUESTION: Q1. [3 Marks, CBSE 2024 (75)] Differentiate between Special Olympics Bharat and Paralympics on the basis of eligibility, governing body, and motto.
 SOLUTION:
@@ -196,11 +216,14 @@ SOLUTION:
 
   // CHAPTER 5: Sports and Nutrition
   if (
-    chapterLower.includes('nutrition') ||
-    chapterLower.includes('diet') ||
-    chapterLower.includes('macro') ||
-    chapterLower.includes('micro') ||
-    chapterLower === 'pe5'
+    id === 'pe5' ||
+    (!id && (
+      chapterLower === 'sports & nutrition' ||
+      chapterLower.includes('sports & nutrition') ||
+      chapterLower.includes('sports and nutrition') ||
+      chapterLower.includes('nutrition') ||
+      chapterLower === 'pe5'
+    ))
   ) {
     return `QUESTION: Q1. [1 Mark MCQ, CBSE 2024 (75)] Which of the following vitamins is a water-soluble vitamin?
 (A) Vitamin A

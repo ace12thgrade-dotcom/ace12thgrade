@@ -36,13 +36,13 @@ export const getInstantNotes = async (subjectId: SubjectId, subjectName: string,
     return getBiologyContent(chapterTitle, 'notes');
   }
   if (subjectId === 'cs') {
-    return getCSContent(chapterTitle, 'notes');
+    return getCSContent(chapterTitle, 'notes', chapterId);
   }
   if (subjectId === 'physed') {
-    return getPEContent(chapterTitle, 'notes');
+    return getPEContent(chapterTitle, 'notes', chapterId);
   }
   if (subjectId === 'english') {
-    return getEnglishContent(chapterTitle, 'notes');
+    return getEnglishContent(chapterTitle, 'notes', chapterId);
   }
 
   return `TOPIC: Chapter Formula Master Vault & When-To-Apply Guide: ${chapterTitle}
@@ -79,13 +79,13 @@ export const getInstantPYQs = async (subjectId: SubjectId, subjectName: string, 
     return getBiologyContent(chapterTitle, 'pyqs');
   }
   if (subjectId === 'cs') {
-    return getCSContent(chapterTitle, 'pyqs');
+    return getCSContent(chapterTitle, 'pyqs', chapterId);
   }
   if (subjectId === 'physed') {
-    return getPEContent(chapterTitle, 'pyqs');
+    return getPEContent(chapterTitle, 'pyqs', chapterId);
   }
   if (subjectId === 'english') {
-    return getEnglishContent(chapterTitle, 'pyqs');
+    return getEnglishContent(chapterTitle, 'pyqs', chapterId);
   }
 
   return `QUESTION: Q1. [5 Marks, Delhi 2024] Comprehensive model question for ${chapterTitle}.
