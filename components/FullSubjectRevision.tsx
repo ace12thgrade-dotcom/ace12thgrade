@@ -257,22 +257,22 @@ export const FullSubjectRevision: React.FC<FullSubjectRevisionProps> = ({
             return (
               <div 
                 key={q.id}
-                className={`rounded-2xl border ${cardBg} shadow-xs hover:shadow-md transition-all overflow-hidden`}
+                className={`rounded-xl sm:rounded-2xl border ${cardBg} shadow-xs hover:shadow-md transition-all overflow-hidden`}
               >
                 {/* Question Header */}
-                <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 space-y-3.5">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-xl bg-amber-700 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                <div className="p-3.5 sm:p-6 border-b border-slate-100 dark:border-slate-800 space-y-2.5 sm:space-y-3.5">
+                  <div className="flex items-center justify-between gap-2.5 sm:gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 sm:gap-2.5">
+                      <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-700 text-white font-black text-[11px] sm:text-xs flex items-center justify-center shadow-xs shrink-0">
                         Q{q.questionNumber || idx + 1}
                       </span>
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-extrabold uppercase tracking-tight text-amber-800 dark:text-amber-400">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-tight text-amber-800 dark:text-amber-400">
                             {q.chapterTitle}
                           </span>
                           {q.label && (
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase tracking-wider">
+                            <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[9px] sm:text-[10px] font-black uppercase tracking-wider">
                               {q.label}
                             </span>
                           )}
@@ -280,30 +280,30 @@ export const FullSubjectRevision: React.FC<FullSubjectRevisionProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                       {q.yearTag && (
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 opacity-80 border border-slate-300/40 dark:border-slate-700">
+                        <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 opacity-80 border border-slate-300/40 dark:border-slate-700">
                           {q.yearTag}
                         </span>
                       )}
-                      <span className="px-2.5 py-0.5 rounded-md bg-amber-700/15 border border-amber-700/30 text-amber-900 dark:text-amber-300 text-xs font-black">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-700/15 border border-amber-700/30 text-amber-900 dark:text-amber-300 text-[11px] sm:text-xs font-black">
                         {q.marks}
                       </span>
                     </div>
                   </div>
 
                   {/* Question Text */}
-                  <div className="text-sm sm:text-base font-semibold leading-relaxed whitespace-pre-line pt-1">
+                  <div className="text-xs sm:text-base font-semibold leading-relaxed whitespace-pre-line pt-0.5 sm:pt-1">
                     {q.question}
                   </div>
 
                   {/* Multiple Choice / Assertion-Reason Options (if present) */}
                   {q.options && q.options.length > 0 && (
-                    <div className="pt-2 grid grid-cols-1 gap-2">
+                    <div className="pt-1 sm:pt-2 grid grid-cols-1 gap-1.5 sm:gap-2">
                       {q.options.map((opt, optIdx) => (
                         <div 
                           key={optIdx}
-                          className="px-3.5 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium"
+                          className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium"
                         >
                           {opt}
                         </div>
@@ -312,15 +312,16 @@ export const FullSubjectRevision: React.FC<FullSubjectRevisionProps> = ({
                   )}
 
                   {/* Action Bar with Show/Hide Answer Button */}
-                  <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800/60">
-                    <span className="text-[11px] font-bold opacity-60 flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-amber-600" />
-                      <span>CBSE Marking Scheme & Step Solution</span>
+                  <div className="pt-2 sm:pt-3 flex items-center justify-between gap-2 sm:gap-3 border-t border-slate-100 dark:border-slate-800/60">
+                    <span className="text-[10px] sm:text-[11px] font-bold opacity-60 flex items-center gap-1 sm:gap-1.5">
+                      <Award className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-amber-600" />
+                      <span className="hidden sm:inline">CBSE Marking Scheme & Step Solution</span>
+                      <span className="sm:hidden">Step Solution</span>
                     </span>
 
                     <button
                       onClick={() => toggleAnswer(q.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-xs ${
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-black flex items-center gap-1.5 sm:gap-2 transition-all shadow-xs ${
                         isRevealed 
                           ? 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200' 
                           : 'bg-amber-700 hover:bg-amber-800 text-white shadow-amber-700/20 active:scale-95'
@@ -328,15 +329,15 @@ export const FullSubjectRevision: React.FC<FullSubjectRevisionProps> = ({
                     >
                       {isRevealed ? (
                         <>
-                          <EyeOff className="w-4 h-4" />
+                          <EyeOff className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                           <span>Hide Answer</span>
-                          <ChevronUp className="w-3.5 h-3.5 opacity-70" />
+                          <ChevronUp className="w-3 sm:w-3.5 h-3 sm:h-3.5 opacity-70" />
                         </>
                       ) : (
                         <>
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                           <span>Show Answer</span>
-                          <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                          <ChevronDown className="w-3 sm:w-3.5 h-3 sm:h-3.5 opacity-70" />
                         </>
                       )}
                     </button>
@@ -345,7 +346,7 @@ export const FullSubjectRevision: React.FC<FullSubjectRevisionProps> = ({
 
                 {/* Answer Section (Revealed Smoothly) */}
                 {isRevealed && (
-                  <div className={`p-5 sm:p-7 space-y-5 border-t ${solutionBg}`}>
+                  <div className={`p-3.5 sm:p-7 space-y-3.5 sm:space-y-5 border-t ${solutionBg}`}>
                     
                     {/* Final Answer / Direct Conclusion */}
                     {q.answer.finalAnswer && (

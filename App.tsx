@@ -173,18 +173,26 @@ const App: React.FC = () => {
           
           <footer className="mt-auto px-6 lg:px-10 py-3.5 border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-950">
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <div className="flex gap-6 font-semibold opacity-70">
-                <button onClick={openAbout} className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors">About</button>
-                <button onClick={openContact} className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors">Contact</button>
-                <button onClick={openPrivacy} className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors">Privacy</button>
-                <button 
-                  onClick={() => handleOpenAdmin()} 
-                  className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors opacity-60 hover:opacity-100 flex items-center gap-1"
-                  title="Press Ctrl+Shift+A anywhere to open"
-                >
-                  <ShieldCheck className="w-3 h-3" />
-                  <span>Faculty Desk</span>
-                </button>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/logo.png" 
+                  alt="Ace12 Logo" 
+                  className="w-5 h-5 rounded-md object-cover border border-amber-500/30"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="flex gap-4 sm:gap-6 font-semibold opacity-70">
+                  <button onClick={openAbout} className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors">About</button>
+                  <button onClick={openContact} className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors">Contact</button>
+                  <button onClick={openPrivacy} className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors">Privacy</button>
+                  <button 
+                    onClick={() => handleOpenAdmin()} 
+                    className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors opacity-60 hover:opacity-100 flex items-center gap-1"
+                    title="Press Ctrl+Shift+A anywhere to open"
+                  >
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>Faculty Desk</span>
+                  </button>
+                </div>
               </div>
               <div className="font-bold opacity-60 text-[11px]">
                 Ace12 CBSE Class 12 Preparation Hub • Offline Ready
@@ -214,7 +222,18 @@ const App: React.FC = () => {
             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 lg:p-8 max-w-lg w-full shadow-xl"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3">{modalContent.title}</h3>
+            <div className="flex items-center gap-3.5 mb-3.5">
+              <img 
+                src="/logo.png" 
+                alt="Ace12 Logo" 
+                className="w-11 h-11 rounded-xl shadow-md border border-amber-500/30 object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-none">{modalContent.title}</h3>
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mt-1 block">Official CBSE Class 12 Portal</span>
+              </div>
+            </div>
             <p className="text-slate-600 dark:text-slate-300 text-sm font-medium leading-relaxed whitespace-pre-wrap">{modalContent.body}</p>
             <button 
               onClick={() => setModalContent(null)}

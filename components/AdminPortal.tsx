@@ -477,8 +477,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto mb-5 shadow-inner">
-            <ShieldCheck className="w-7 h-7" />
+          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-lg mx-auto mb-4">
+            <img 
+              src="/logo.png" 
+              alt="Ace12 Logo" 
+              className="w-full h-full object-cover" 
+              referrerPolicy="no-referrer"
+            />
           </div>
 
           <h2 className="text-xl font-black text-center text-slate-900 dark:text-white tracking-tight">
@@ -575,9 +580,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose, initialSubjectId, in
         {/* Top Navbar */}
         <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-800 text-white flex items-center justify-center font-black shadow-sm">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Ace12 Logo" 
+              className="w-10 h-10 rounded-xl shadow-sm border border-amber-500/30 object-cover" 
+              referrerPolicy="no-referrer"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">

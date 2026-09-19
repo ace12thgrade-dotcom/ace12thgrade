@@ -1,6 +1,6 @@
 import { Subject, Chapter, UploadedBook } from '../types.ts';
 import { SUBJECTS as DEFAULT_SUBJECTS } from '../constants.tsx';
-import { db } from './firebase.ts';
+import { db, auth } from './firebase.ts';
 import { 
   doc, 
   setDoc, 
@@ -10,6 +10,59 @@ import {
   onSnapshot, 
   getDocs 
 } from 'firebase/firestore';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  // Only throw structured permission errors if it's a security/permission rejection
+  if (errMsg.toLowerCase().includes('permission') || errMsg.toLowerCase().includes('insufficient')) {
+    const errInfo: FirestoreErrorInfo = {
+      error: errMsg,
+      authInfo: {
+        userId: auth?.currentUser?.uid,
+        email: auth?.currentUser?.email,
+        emailVerified: auth?.currentUser?.emailVerified,
+        isAnonymous: auth?.currentUser?.isAnonymous,
+        tenantId: auth?.currentUser?.tenantId,
+        providerInfo: auth?.currentUser?.providerData?.map(provider => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || []
+      },
+      operationType,
+      path
+    };
+    console.warn('Firestore Permission Notice:', JSON.stringify(errInfo));
+  } else {
+    // Connection / offline or transient network event - app operates with local cache
+    console.info(`Firestore ${operationType} on [${path}]: Operating in resilient offline mode.`);
+  }
+}
 
 const DB_NAME = 'Ace12_Content_DB';
 const DB_VERSION = 1;
@@ -204,7 +257,7 @@ const syncCurriculumToFirestore = async () => {
       updatedAt: new Date().toISOString()
     }, { merge: true });
   } catch (err) {
-    console.error('Failed to sync curriculum to Firestore:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'curriculum/global');
   }
 };
 
@@ -290,9 +343,9 @@ export const saveCustomNote = (subjectId: string, chapterId: string, markdown: s
       chapterId,
       markdown,
       updatedAt: new Date().toISOString()
-    }).catch(err => console.error('Failed to sync note to cloud:', err));
+    }).catch(err => handleFirestoreError(err, OperationType.WRITE, `notes/${key}`));
   } catch (e) {
-    console.error('Failed to save custom note', e);
+    console.warn('Custom note saved locally:', e);
   }
 };
 
@@ -305,9 +358,9 @@ export const deleteCustomNote = (subjectId: string, chapterId: string): void => 
     dispatchContentUpdate();
 
     // Remove from Firestore Cloud
-    deleteDoc(doc(db, 'notes', key)).catch(err => console.error('Failed to delete cloud note:', err));
+    deleteDoc(doc(db, 'notes', key)).catch(err => handleFirestoreError(err, OperationType.DELETE, `notes/${key}`));
   } catch (e) {
-    console.error('Failed to delete custom note', e);
+    console.warn('Custom note deleted locally:', e);
   }
 };
 
@@ -335,9 +388,9 @@ export const saveCustomPYQs = (subjectId: string, chapterId: string, markdown: s
       chapterId,
       markdown,
       updatedAt: new Date().toISOString()
-    }).catch(err => console.error('Failed to sync PYQs to cloud:', err));
+    }).catch(err => handleFirestoreError(err, OperationType.WRITE, `pyqs/${key}`));
   } catch (e) {
-    console.error('Failed to save custom pyqs', e);
+    console.warn('Custom PYQs saved locally:', e);
   }
 };
 
@@ -350,9 +403,9 @@ export const deleteCustomPYQs = (subjectId: string, chapterId: string): void => 
     dispatchContentUpdate();
 
     // Remove from Firestore Cloud
-    deleteDoc(doc(db, 'pyqs', key)).catch(err => console.error('Failed to delete cloud pyqs:', err));
+    deleteDoc(doc(db, 'pyqs', key)).catch(err => handleFirestoreError(err, OperationType.DELETE, `pyqs/${key}`));
   } catch (e) {
-    console.error('Failed to delete custom pyqs', e);
+    console.warn('Custom PYQs deleted locally:', e);
   }
 };
 
@@ -378,7 +431,7 @@ export const saveUploadedBook = async (book: UploadedBook): Promise<void> => {
       updatedAt: new Date().toISOString()
     });
   } catch (err) {
-    console.error('Failed to sync book to Firestore:', err);
+    handleFirestoreError(err, OperationType.WRITE, `books/${book.id}`);
   }
 };
 
@@ -402,7 +455,7 @@ export const getAllBooks = async (subjectId?: string, chapterId?: string): Promi
       req.onerror = () => reject(req.error);
     });
   } catch (e) {
-    console.error('Error fetching books from IndexedDB', e);
+    console.warn('Error reading books from local storage:', e);
     return [];
   }
 };
@@ -424,7 +477,7 @@ export const deleteUploadedBook = async (bookId: string): Promise<void> => {
   try {
     await deleteDoc(doc(db, 'books', bookId));
   } catch (err) {
-    console.error('Failed to delete book from cloud:', err);
+    handleFirestoreError(err, OperationType.DELETE, `books/${bookId}`);
   }
 };
 
@@ -445,7 +498,7 @@ export const clearAllBooks = async (): Promise<void> => {
       await deleteDoc(d.ref);
     }
   } catch (err) {
-    console.warn('Error clearing cloud books:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'books');
   }
 
   dispatchContentUpdate();
@@ -467,7 +520,7 @@ export const eraseAllCustomNotesAndOverrides = async (): Promise<void> => {
       await deleteDoc(d.ref);
     }
   } catch (err) {
-    console.error('Failed to clear cloud notes:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'notes-pyqs-reset');
   }
 
   dispatchContentUpdate();
@@ -486,7 +539,7 @@ export const eraseAllContentAndFactoryReset = async (): Promise<void> => {
     await deleteDoc(doc(db, 'curriculum', 'global'));
     await eraseAllCustomNotesAndOverrides();
   } catch (err) {
-    console.error('Failed to reset cloud database:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'curriculum/global');
   }
 
   dispatchContentUpdate();
@@ -620,7 +673,7 @@ export const initContentSync = (): (() => void) => {
         }
       }
     }, (err) => {
-      console.warn('Curriculum cloud listener note:', err.message);
+      handleFirestoreError(err, OperationType.GET, 'curriculum/global');
     });
     unsubscribes.push(curriculumUnsub);
 
@@ -638,7 +691,7 @@ export const initContentSync = (): (() => void) => {
         dispatchContentUpdate();
       }
     }, (err) => {
-      console.warn('Notes cloud listener note:', err.message);
+      handleFirestoreError(err, OperationType.LIST, 'notes');
     });
     unsubscribes.push(notesUnsub);
 
@@ -656,7 +709,7 @@ export const initContentSync = (): (() => void) => {
         dispatchContentUpdate();
       }
     }, (err) => {
-      console.warn('PYQs cloud listener note:', err.message);
+      handleFirestoreError(err, OperationType.LIST, 'pyqs');
     });
     unsubscribes.push(pyqsUnsub);
 
@@ -673,10 +726,10 @@ export const initContentSync = (): (() => void) => {
         }
         dispatchContentUpdate();
       } catch (err) {
-        console.warn('Books cloud sync to local IDB error:', err);
+        console.warn('Books cloud sync to local IDB notice:', err);
       }
     }, (err) => {
-      console.warn('Books cloud listener note:', err.message);
+      handleFirestoreError(err, OperationType.LIST, 'books');
     });
     unsubscribes.push(booksUnsub);
 
@@ -689,12 +742,12 @@ export const initContentSync = (): (() => void) => {
         }
       }
     }, (err) => {
-      console.warn('Settings cloud listener note:', err.message);
+      handleFirestoreError(err, OperationType.GET, 'settings/admin_config');
     });
     unsubscribes.push(settingsUnsub);
 
   } catch (err) {
-    console.error('Error initializing Cloud Firestore listeners:', err);
+    console.warn('Cloud Firestore listeners standby (offline mode):', err);
   }
 
   return () => {

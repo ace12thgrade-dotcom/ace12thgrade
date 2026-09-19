@@ -25,10 +25,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSubject, setActiveSubject, onOp
   return (
     <aside className="w-16 md:w-20 lg:w-56 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/80 h-full sticky top-0 flex flex-col z-40 transition-colors shrink-0">
       {/* Brand Header */}
-      <div className="p-4 lg:p-5 flex items-center justify-center lg:justify-start gap-3 border-b border-slate-100 dark:border-slate-800/50">
-        <div className="w-9 h-9 lg:w-10 lg:h-10 bg-amber-700 dark:bg-amber-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
-          A
-        </div>
+      <div className="p-3.5 lg:p-4 flex items-center justify-center lg:justify-start gap-3 border-b border-slate-100 dark:border-slate-800/50">
+        <img 
+          src="/logo.png" 
+          alt="Ace12 Logo" 
+          className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl shadow-md border border-amber-500/30 object-cover shrink-0 hover:scale-105 transition-transform" 
+          referrerPolicy="no-referrer"
+        />
         <div className="hidden lg:block">
           <span className="font-black text-lg text-slate-900 dark:text-white tracking-tight block leading-none">Ace12</span>
           <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 tracking-wider uppercase mt-1 block">Study Hub</span>
