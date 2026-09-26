@@ -339,7 +339,7 @@ export const CHAPTER_FORMULA_VAULT: Record<string, FormulaData[]> = {
  */
 export const getFormulasForChapter = (
   chapterTitle: string,
-  sections: { title: string; items: { type: string; text: string }[] }[]
+  sections: { title: string; items: { type: string; text: string }[] }[] = []
 ): FormulaData[] => {
   const normTitle = chapterTitle.toLowerCase();
 

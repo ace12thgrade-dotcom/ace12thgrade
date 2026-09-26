@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import SubjectDashboard from './components/SubjectDashboard.tsx';
+import { MyStudyDashboard } from './components/MyStudyDashboard.tsx';
 import ChatInterface from './components/ChatInterface.tsx';
 import AdminPortal from './components/AdminPortal.tsx';
 import { getActiveSubjects, CONTENT_UPDATE_EVENT, isAdminAuthenticated, initContentSync } from './services/contentStore.ts';
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [adminFocus, setAdminFocus] = useState<{ subjectId?: string; chapterId?: string } | undefined>();
   const [isAdmin, setIsAdmin] = useState(isAdminAuthenticated());
+  const [isMyStudyOpen, setIsMyStudyOpen] = useState(false);
 
   // Initialize Real-Time Cloud Synchronization across all devices
   useEffect(() => {
@@ -54,6 +56,7 @@ const App: React.FC = () => {
     id: 'physics' as SubjectId,
     name: 'Physics',
     icon: '⚡',
+    color: 'blue',
     chapters: []
   };
 
@@ -114,14 +117,22 @@ const App: React.FC = () => {
     <div className="flex h-[100dvh] w-full bg-[#faf7f2] dark:bg-[#0b1120] text-slate-900 dark:text-slate-100 selection:bg-amber-500/30 overflow-hidden font-sans">
       <Sidebar 
         activeSubject={activeSubjectId} 
-        setActiveSubject={setActiveSubjectId} 
+        setActiveSubject={(id) => {
+          setActiveSubjectId(id);
+          setIsMyStudyOpen(false);
+        }} 
         onOpenAdmin={() => handleOpenAdmin()}
+        isMyStudyActive={isMyStudyOpen}
+        onSelectMyStudy={() => {
+          setIsMyStudyOpen(true);
+          setSelectedChapter(null);
+        }}
       />
 
       <main className="flex-1 flex flex-col min-w-0 relative h-full">
         {/* Clean, Human Top Bar */}
         <header className="h-14 lg:h-16 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0">
-          {!selectedChapter && (
+          {!selectedChapter && !isMyStudyOpen && (
             <div className="flex-1 max-w-md hidden md:block">
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -139,8 +150,19 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
+
+          {isMyStudyOpen && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-amber-900 dark:text-amber-300">
+                🎯 My Study Workspace
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                Mistake Book & Weak Topics
+              </span>
+            </div>
+          )}
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             {/* Show Admin Active badge only when authenticated */}
             {isAdmin && (
               <button
@@ -162,13 +184,29 @@ const App: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth w-full flex flex-col">
           <div className="flex-1">
-            <SubjectDashboard 
-              subject={activeSubject} 
-              searchQuery={searchQuery} 
-              selectedChapter={selectedChapter}
-              setSelectedChapter={setSelectedChapter}
-              onOpenAdmin={(subId, chId) => handleOpenAdmin(subId, chId)}
-            />
+            {isMyStudyOpen ? (
+              <MyStudyDashboard 
+                subjects={subjects}
+                onSelectChapter={(subId, chapter) => {
+                  setActiveSubjectId(subId);
+                  setSelectedChapter(chapter);
+                  setIsMyStudyOpen(false);
+                }}
+                onSelectSubject={(subId) => {
+                  setActiveSubjectId(subId);
+                  setSelectedChapter(null);
+                  setIsMyStudyOpen(false);
+                }}
+              />
+            ) : (
+              <SubjectDashboard 
+                subject={activeSubject} 
+                searchQuery={searchQuery} 
+                selectedChapter={selectedChapter}
+                setSelectedChapter={setSelectedChapter}
+                onOpenAdmin={(subId, chId) => handleOpenAdmin(subId, chId)}
+              />
+            )}
           </div>
           
           <footer className="mt-auto px-6 lg:px-10 py-3.5 border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-950">
@@ -202,7 +240,10 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <ChatInterface />
+      <ChatInterface 
+        activeSubject={activeSubject}
+        selectedChapter={selectedChapter}
+      />
 
       {/* Admin Portal Full-Screen Modal Dashboard */}
       {isAdminOpen && (

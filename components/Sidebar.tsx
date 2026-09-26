@@ -7,9 +7,17 @@ interface SidebarProps {
   activeSubject: SubjectId;
   setActiveSubject: (id: SubjectId) => void;
   onOpenAdmin: () => void;
+  isMyStudyActive?: boolean;
+  onSelectMyStudy?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeSubject, setActiveSubject, onOpenAdmin }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  activeSubject, 
+  setActiveSubject, 
+  onOpenAdmin,
+  isMyStudyActive = false,
+  onSelectMyStudy
+}) => {
   const [subjects, setSubjects] = useState<Subject[]>(getActiveSubjects());
   const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
 
@@ -40,11 +48,31 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSubject, setActiveSubject, onOp
       
       {/* Subject Navigation */}
       <nav className="flex-1 px-2 lg:px-3 space-y-1.5 py-4 overflow-y-auto no-scrollbar">
-        <div className="hidden lg:flex items-center justify-between px-3 pb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400">
+        {/* MY STUDY BUTTON */}
+        <button
+          onClick={() => onSelectMyStudy && onSelectMyStudy()}
+          className={`w-full flex items-center justify-center lg:justify-start gap-0 lg:gap-3 px-0 lg:px-3 py-2.5 rounded-xl transition-all font-bold text-xs ${
+            isMyStudyActive
+              ? 'bg-amber-800 text-white shadow-sm'
+              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+          }`}
+          title="My Study Dashboard (Mistake Book, Weak Topics, Quick Revision)"
+        >
+          <span className="text-lg shrink-0">🎯</span>
+          <span className="hidden lg:block tracking-tight truncate font-extrabold">
+            My Study
+          </span>
+          <span className="hidden lg:inline ml-auto text-[8px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded font-black">
+            HUB
+          </span>
+        </button>
+
+        <div className="hidden lg:flex items-center justify-between px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400">
           <span>Subjects (CBSE 12)</span>
         </div>
+
         {subjects.map((sub) => {
-          const isActive = activeSubject === sub.id;
+          const isActive = !isMyStudyActive && activeSubject === sub.id;
           return (
             <button
               key={sub.id}
@@ -62,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSubject, setActiveSubject, onOp
                 {sub.name}
               </span>
               {sub.isCustom && (
-                <span className="hidden lg:inline ml-auto text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-black">
+                <span className="hidden lg:inline ml-auto text-[9px] bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-black">
                   NEW
                 </span>
               )}

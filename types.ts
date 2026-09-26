@@ -40,6 +40,8 @@ export interface UploadedBook {
   description?: string;
   author?: string;
   tags?: string[];
+  fileType?: string;
+  fileSize?: string | number;
 }
 
 export interface ChatMessage {

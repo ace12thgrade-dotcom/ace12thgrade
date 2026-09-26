@@ -1,111 +1,245 @@
-
 import React, { useState, useRef, useEffect } from 'react';
+import Markdown from 'react-markdown';
+import { Send, X, RotateCcw, Sparkles, HelpCircle, BookOpen, Compass, Zap } from 'lucide-react';
 import { chatWithTutor } from '../services/geminiService.ts';
-import { ChatMessage } from '../types.ts';
+import { ChatMessage, Subject, Chapter } from '../types.ts';
 
-const ChatInterface: React.FC = () => {
+const SUGGESTED_QUESTIONS = [
+  { label: '📱 How to use Ace12', query: 'What features does Ace12 have and how do I use them to prepare for Class 12 Boards?' },
+  { label: '⚡ Gauss Law Derivation', query: 'Explain Gauss\'s Law with step-by-step mathematical proof and CBSE exam tips.' },
+  { label: '🧪 Organic Name Reactions', query: 'List the most important Named Reactions for CBSE Class 12 Chemistry with reagents.' },
+  { label: '🎯 Where are PYQs & Notes?', query: 'Where can I find the 15-year CBSE PYQs and Formula Vaults in this app?' },
+  { label: '➗ Calculus High-Yield Topics', query: 'What are the highest-weightage topics in Class 12 Mathematics calculus for board exams?' },
+];
+
+const INITIAL_MESSAGE: ChatMessage = {
+  role: 'model',
+  text: `**Namaste! I am AceBot**, your dedicated study mentor for **Ace12 - Class 12 CBSE Study Hub**.\n\nI have complete information about:\n- 🚀 **Ace12 App Features**: All 7 subjects, 5 chapter modes (Notes, Formula Vaults, 4250+ Solved PYQs, Books/PDFs, AI Audio Reader), mobile zoom controls, and navigation.\n- 📚 **CBSE Class 12 Curriculum**: Physics, Chemistry, Maths, Biology, Computer Science, English Core, and Physical Education with step-marking rubrics and NCERT insights.\n\nWhat can I help you learn or navigate today?`
+};
+
+interface ChatInterfaceProps {
+  activeSubject?: Subject;
+  selectedChapter?: Chapter | null;
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ activeSubject, selectedChapter }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: 'Namaste! Main hoon AceBot. Board Exams 2026 ki taiyari shuru karein? Poochiye kuch bhi!' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic contextual suggestions based on currently open chapter
+  const currentSuggestions = selectedChapter ? [
+    { label: '📖 Explain this topic', query: `Explain the core concepts and key laws of "${selectedChapter.title}" in Class 12 ${activeSubject?.name || 'CBSE'} in clear, exam-ready notes.` },
+    { label: '⚡ Solve a numerical', query: `Provide a classic solved numerical problem from "${selectedChapter.title}" with given data, formula, substitution, and standard SI units.` },
+    { label: '✍️ Give board-style answer', query: `Write a high-scoring 5-mark CBSE board-style answer for "${selectedChapter.title}" with step-by-step points and marking scheme.` },
+    { label: '📝 Test me', query: `Ask me 3 board-level practice questions from "${selectedChapter.title}" to test my preparation.` },
+  ] : SUGGESTED_QUESTIONS;
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isLoading]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMsg = input;
+  const handleSend = async (customText?: string) => {
+    const textToSend = (customText || input).trim();
+    if (!textToSend || isLoading) return;
+    
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    const nextMessages = [...messages, { role: 'user' as const, text: textToSend }];
+    setMessages(nextMessages);
     setIsLoading(true);
+
     try {
-      const response = await chatWithTutor(messages, userMsg);
+      // Pass the previous history plus current user message
+      const response = await chatWithTutor(messages, textToSend);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (e: any) {
-      const errorMessage = e?.message || 'Failed to connect to AceBot';
-      setMessages(prev => [...prev, { role: 'model', text: `⚠️ ${errorMessage}. Please try again or check your API key / quota in Settings.` }]);
+      // Offline fallback: provide instant contextual academic guidance from offline syllabus
+      let offlineFallback = `⚠️ **Offline Mentor Mode**: Live AI service is currently resting.\n\n`;
+      if (selectedChapter) {
+        offlineFallback += `You can access complete verified notes, derivations, and solved CBSE PYQs for **${selectedChapter.title}** directly in the chapter tabs:\n- **📖 Notes & Theory**: Stepwise proofs, NCERT definitions, and exam tips\n- **📑 Formula Vault**: Equations with SI units and when-to-apply criteria\n- **🎯 4-5 Solved PYQs**: 15-year past board questions with stepwise marking rubrics\n- **🎯 Test Yourself**: 3-question instant interactive quiz with retry & Mistake Book saving!`;
+      } else {
+        offlineFallback += `You can continue browsing all complete chapter notes, formula vaults, and verified CBSE PYQs directly in the subject tabs on the left. All core materials are 100% offline-ready!`;
+      }
+
+      setMessages(prev => [
+        ...prev, 
+        { 
+          role: 'model', 
+          text: offlineFallback
+        }
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleResetChat = () => {
+    setMessages([INITIAL_MESSAGE]);
+    setInput('');
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-50">
+    <div className="fixed bottom-5 right-5 lg:bottom-8 lg:right-8 z-50">
       {isOpen ? (
-        <div className="bg-slate-900/95 backdrop-blur-3xl w-[90vw] md:w-[500px] h-[70vh] md:h-[700px] rounded-3xl lg:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] border border-white/5 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-500 origin-bottom-right">
-          <div className="bg-slate-950 p-6 lg:p-10 flex items-center justify-between text-white relative overflow-hidden border-b border-white/5">
-            {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-[50px] z-0"></div>
-            
-            <div className="flex items-center gap-4 lg:gap-5 relative z-10">
-              <div className="w-10 h-10 lg:w-14 lg:h-14 bg-indigo-600 rounded-xl lg:rounded-2xl flex items-center justify-center text-xl lg:text-3xl shadow-3xl shadow-indigo-500/30">✨</div>
-              <div>
-                <span className="font-black text-base lg:text-xl block leading-none tracking-tight">AceBot AI</span>
-                <span className="text-[8px] lg:text-[9px] font-black uppercase tracking-[0.4em] text-indigo-400 mt-1 lg:mt-2 block">Board Tutor</span>
+        <div className="bg-slate-950/95 backdrop-blur-2xl w-[92vw] sm:w-[460px] md:w-[500px] h-[82vh] max-h-[720px] rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] border border-amber-500/30 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 origin-bottom-right">
+          
+          {/* Header Bar */}
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/40 p-4 sm:p-5 flex items-center justify-between text-white border-b border-amber-500/20 relative shrink-0">
+            <div className="flex items-center gap-3 relative z-10 min-w-0">
+              <div className="relative shrink-0">
+                <img 
+                  src="/logo.png" 
+                  alt="Ace12 Logo" 
+                  className="w-10 h-10 rounded-xl shadow-md border border-amber-500/40 object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-base tracking-tight">AceBot AI</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                    CBSE 12
+                  </span>
+                </div>
+                {selectedChapter ? (
+                  <span className="text-[10px] font-bold text-amber-300/90 block mt-0.5 truncate max-w-[240px]">
+                    Context: {selectedChapter.title}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">
+                    App Guide & Board Exam Mentor
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Close Button - Added relative z-20 to fix clickability */}
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} 
-              className="relative z-20 p-2 text-white/30 hover:text-white transition-colors text-xl lg:text-2xl cursor-pointer bg-white/5 rounded-full hover:bg-white/10"
-              aria-label="Close chat"
-            >
-              ✕
-            </button>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1.5 relative z-20 shrink-0">
+              <button 
+                onClick={handleResetChat} 
+                className="p-2 text-slate-400 hover:text-amber-300 transition-colors rounded-xl hover:bg-white/5 active:scale-95"
+                title="Restart conversation"
+                aria-label="Restart conversation"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="p-2 text-slate-400 hover:text-white transition-colors rounded-xl hover:bg-white/5 active:scale-95"
+                title="Close chat"
+                aria-label="Close chat"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-6 lg:space-y-8 bg-slate-950/20 no-scrollbar">
+          {/* Messages Stream */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-slate-950/40 scroll-smooth">
             {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-500`}>
-                <div className={`max-w-[90%] lg:max-w-[85%] px-6 lg:px-8 py-4 lg:py-5 rounded-2xl lg:rounded-[2.5rem] text-xs lg:text-[14px] font-bold tracking-tight leading-relaxed ${
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                {m.role === 'model' && (
+                  <img 
+                    src="/logo.png" 
+                    alt="AceBot" 
+                    className="w-7 h-7 rounded-lg mr-2 mt-1 shrink-0 border border-amber-500/30 object-cover shadow-sm hidden sm:block"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                
+                <div className={`max-w-[92%] sm:max-w-[85%] px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-md ${
                   m.role === 'user' 
-                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-2xl shadow-indigo-500/10' 
-                    : 'bg-slate-800 text-slate-200 border border-white/5 rounded-tl-none'
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-tr-none font-medium' 
+                    : 'bg-slate-900/90 text-slate-200 border border-slate-800/90 rounded-tl-none font-normal'
                 }`}>
-                  {m.text}
+                  {m.role === 'user' ? (
+                    <p className="whitespace-pre-wrap">{m.text}</p>
+                  ) : (
+                    <div className="prose prose-invert prose-xs max-w-none space-y-2 prose-p:my-1 prose-headings:my-2 prose-headings:font-bold prose-headings:text-amber-300 prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5 prose-code:text-amber-300 prose-code:bg-amber-950/40 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-strong:text-amber-200 prose-strong:font-bold">
+                      <Markdown>{m.text}</Markdown>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
+
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white/5 border-white/5 border px-6 py-3 rounded-full text-[8px] lg:text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
-                  AceBot is thinking...
-                </div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 rounded-2xl w-fit animate-pulse">
+                <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                <span>AceBot is researching CBSE notes & syllabus...</span>
               </div>
             )}
           </div>
 
-          <div className="p-4 lg:p-8 border-t border-white/5 bg-slate-950/50 backdrop-blur-md flex gap-3 lg:gap-4">
+          {/* Quick Suggestion Chips */}
+          <div className="px-4 py-2 border-t border-slate-800/60 bg-slate-950/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+            <span className="text-[10px] font-bold text-amber-500/80 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Quick:
+            </span>
+            {currentSuggestions.map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSend(q.query)}
+                disabled={isLoading}
+                className="text-[11px] whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-900 hover:bg-amber-950/60 hover:text-amber-200 hover:border-amber-500/40 text-slate-300 border border-slate-800 transition-all shrink-0 active:scale-95 disabled:opacity-50"
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Input Form */}
+          <div className="p-3 sm:p-4 border-t border-slate-800/80 bg-slate-950 flex items-center gap-2 shrink-0">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask AceBot..."
-              className="flex-1 px-6 py-4 lg:py-5 bg-white/5 border border-white/5 rounded-full outline-none focus:ring-4 focus:ring-indigo-500/20 text-xs lg:text-[14px] font-bold text-white shadow-inner"
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder={selectedChapter ? `Ask about ${selectedChapter.title}...` : "Ask AceBot about Ace12 features, formulas, derivations, PYQs..."}
+              disabled={isLoading}
+              className="flex-1 px-4 py-3 bg-slate-900 border border-slate-800 focus:border-amber-500/50 rounded-xl outline-none text-xs sm:text-[13px] text-white placeholder:text-slate-500 transition-all"
             />
             <button 
-              onClick={handleSend}
-              className="w-12 h-12 lg:w-16 lg:h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-500 hover:scale-105 active:scale-90 transition-all shadow-3xl shadow-indigo-600/20 shrink-0"
+              onClick={() => handleSend()}
+              disabled={!input.trim() || isLoading}
+              className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl flex items-center justify-center transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              title="Send message"
+              aria-label="Send message"
             >
-              ➔
+              <Send className="w-4 h-4" />
             </button>
           </div>
         </div>
       ) : (
         <button 
           onClick={() => setIsOpen(true)}
-          className="w-16 h-16 lg:w-24 lg:h-24 bg-indigo-600 text-white rounded-[2rem] lg:rounded-[3rem] shadow-[0_35px_70px_-15px_rgba(99,102,241,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all group relative border-4 border-slate-950"
+          className="group relative flex items-center gap-2.5 bg-slate-950/95 hover:bg-slate-900 text-white pl-2 pr-4 py-2 rounded-2xl shadow-[0_15px_35px_-10px_rgba(0,0,0,0.8)] border border-amber-500/40 hover:border-amber-500/70 transition-all hover:scale-105 active:scale-95"
+          title="Open AceBot AI CBSE Tutor"
+          aria-label="Open AceBot AI CBSE Tutor"
         >
-          <div className="absolute -top-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full border-4 border-slate-950 animate-bounce"></div>
-          <span className="text-2xl lg:text-4xl group-hover:rotate-12 transition-transform">✨</span>
+          <div className="relative">
+            <img 
+              src="/logo.png" 
+              alt="AceBot Logo" 
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-amber-500/40 object-cover shadow-sm"
+              referrerPolicy="no-referrer"
+            />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950 animate-pulse" />
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-1">
+              <span className="font-extrabold text-xs tracking-tight text-white">AceBot AI</span>
+              <Sparkles className="w-3 h-3 text-amber-400" />
+            </div>
+            <span className="text-[10px] font-semibold text-amber-400/90 block leading-tight">
+              {selectedChapter ? 'Context Active' : 'CBSE 12 Tutor & Guide'}
+            </span>
+          </div>
         </button>
       )}
     </div>
@@ -113,3 +247,4 @@ const ChatInterface: React.FC = () => {
 };
 
 export default ChatInterface;
+

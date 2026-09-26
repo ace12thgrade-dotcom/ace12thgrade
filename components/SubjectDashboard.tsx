@@ -17,7 +17,35 @@ import { FormulaCard, FormulaData } from './FormulaCard.tsx';
 import { TextbookDiagram, DiagramType } from './TextbookDiagram.tsx';
 import { getFormulasForChapter } from '../services/formulaVaultService.ts';
 import { FullSubjectRevision } from './FullSubjectRevision.tsx';
-import { BookOpen, FileText, Upload, Plus, ShieldCheck, Edit3, Download, Eye, Layers, Headphones, Sparkles, Volume2 } from 'lucide-react';
+import { getChapterMeta } from '../services/chapterMetadata.ts';
+import { 
+  recordChapterVisit, 
+  getChapterProgress, 
+  saveToMistakeBook, 
+  isQuestionInMistakeBook,
+  ACE12_PROGRESS_EVENT 
+} from '../services/studyProgressService.ts';
+import { TestYourselfSection } from './TestYourselfSection.tsx';
+import { 
+  BookOpen, 
+  FileText, 
+  Upload, 
+  Plus, 
+  ShieldCheck, 
+  Edit3, 
+  Download, 
+  Eye, 
+  Layers, 
+  Headphones, 
+  Sparkles, 
+  Volume2,
+  Bookmark,
+  BookmarkCheck,
+  Lightbulb,
+  AlertTriangle,
+  Award,
+  CheckCircle2
+} from 'lucide-react';
 
 interface SubjectDashboardProps {
   subject: Subject;
@@ -30,7 +58,7 @@ interface SubjectDashboardProps {
 export type StudyTheme = 'paper' | 'oxford' | 'slate';
 export type StudyFont = 'sans' | 'serif' | 'display';
 export type StudyFontSize = 'sm' | 'md' | 'lg' | 'xl';
-export type TabViewMode = 'all' | 'notes' | 'formulas' | 'pyqs' | 'diagrams' | 'books';
+export type TabViewMode = 'all' | 'notes' | 'formulas' | 'pyqs' | 'diagrams' | 'books' | 'test';
 
 export const sanitizeTheme = (val: unknown): StudyTheme => {
   if (val === 'oxford' || val === 'slate' || val === 'paper') return val;
@@ -291,13 +319,25 @@ export const NaturalNotebookViewer: React.FC<{
   content: string; 
   pyqContent?: string;
   subject: string; 
+  subjectId?: string;
   chapterTitle?: string;
+  chapterId?: string;
   tabMode: TabViewMode;
   isRevision?: boolean;
   config?: NotebookConfig;
   onSelectTab: (tab: TabViewMode) => void;
-}> = ({ content, pyqContent, subject, chapterTitle, tabMode, isRevision, config, onSelectTab }) => {
+}> = ({ content, pyqContent, subject, subjectId, chapterTitle, chapterId, tabMode, isRevision, config, onSelectTab }) => {
   const [filterQuery, setFilterQuery] = useState('');
+  const [savedMistakeMap, setSavedMistakeMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const handleProgressUpdate = () => {
+      // Refresh saved status
+      setSavedMistakeMap(prev => ({ ...prev }));
+    };
+    window.addEventListener(ACE12_PROGRESS_EVENT, handleProgressUpdate);
+    return () => window.removeEventListener(ACE12_PROGRESS_EVENT, handleProgressUpdate);
+  }, []);
 
   const notesSections = useMemo(() => parseStudyContent(content, false, isRevision), [content, isRevision]);
   const pyqSections = useMemo(() => {
@@ -441,6 +481,24 @@ export const NaturalNotebookViewer: React.FC<{
     );
   }
 
+  // DEDICATED TEST YOURSELF VIEW
+  if (tabMode === 'test') {
+    return (
+      <div 
+        style={zoomStyle}
+        className={`w-full max-w-full mx-auto pb-20 sm:pb-28 px-0 sm:px-1 ${getFontClass(activeFont)} ${getSizeClass(activeSize)}`}
+      >
+        <TestYourselfSection
+          chapterId={chapterId || 'p1'}
+          chapterTitle={chapterTitle || 'Chapter'}
+          subjectId={subjectId || 'physics'}
+          subjectName={subject}
+          theme={activeTheme}
+        />
+      </div>
+    );
+  }
+
   return (
     <div 
       style={zoomStyle}
@@ -487,6 +545,46 @@ export const NaturalNotebookViewer: React.FC<{
         displayedSections.map((section, idx) => {
           const isPyqCard = tabMode === 'pyqs' || section.tag === 'pyq' || section.marks !== undefined;
 
+          // Extract PYQ Metadata
+          const qMarks = section.marks || section.title.match(/\[([0-9]+\s*Marks?[^\]]*)\]/i)?.[1] || (isPyqCard ? '1-5 Marks' : undefined);
+          const qYear = section.year || section.title.match(/(CBSE\s*20\d\d[^\]\)]*|Delhi\s*20\d\d|All\s*India\s*20\d\d|Foreign\s*20\d\d)/i)?.[1] || (isRevision ? 'CBSE Past 15 Years' : 'CBSE 2024-2020 Pattern');
+          const tLower = section.title.toLowerCase();
+          const qType = tLower.includes('mcq') ? 'MCQ (1 Mark)' :
+            tLower.includes('assertion') ? 'Assertion-Reason' :
+            tLower.includes('case') ? 'Case Study' :
+            tLower.includes('deriv') ? 'Derivation & Proof' :
+            tLower.includes('calculate') || tLower.includes('find') || tLower.includes('numerical') ? 'Numerical Problem' :
+            (qMarks && qMarks.includes('1')) ? 'VSA (1 Mark)' :
+            (qMarks && qMarks.includes('2')) ? 'SA-I (2 Marks)' :
+            (qMarks && qMarks.includes('3')) ? 'SA-II (3 Marks)' :
+            (qMarks && qMarks.includes('5')) ? 'LA (5 Marks)' : 'Board Solved PYQ';
+          const qPriority = (tLower.includes('2024') || tLower.includes('2023') || isRevision || (qMarks && qMarks.includes('5'))) 
+            ? '★ High Frequency' 
+            : 'CBSE Standard Pattern';
+          const qId = `${chapterId || 'ch'}_pyq_${idx}_${section.title.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_')}`;
+          const isSavedInMistake = isQuestionInMistakeBook(qId) || !!savedMistakeMap[qId];
+
+          const handleToggleMistake = () => {
+            const solText = section.items.find(i => i.type === 'solution')?.text || '';
+            const rubricText = section.items.find(i => i.type === 'rubric')?.text || '';
+            const newSaved = saveToMistakeBook({
+              id: qId,
+              subjectId: subjectId || 'physics',
+              subjectName: subject,
+              chapterId: chapterId,
+              chapterTitle: chapterTitle || 'Chapter',
+              questionText: section.title,
+              answerText: solText || section.items.map(i => i.text).join('\n\n'),
+              marks: qMarks || 'Board Question',
+              year: qYear,
+              questionType: qType,
+              markingScheme: rubricText,
+              savedAt: Date.now(),
+              source: 'pyq'
+            });
+            setSavedMistakeMap(prev => ({ ...prev, [qId]: newSaved }));
+          };
+
           return (
             <div key={idx} className="w-full">
               {/* Section Header */}
@@ -520,6 +618,49 @@ export const NaturalNotebookViewer: React.FC<{
 
               {/* Section Card */}
               <div className={`p-3.5 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl lg:rounded-3xl border transition-all ${themeClasses.card}`}>
+                {/* PYQ Enhanced Metadata Header */}
+                {isPyqCard && (
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3.5 mb-3.5 border-b border-slate-200/80 dark:border-slate-800">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <span className="px-2.5 py-0.5 rounded-md bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                        {qYear}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[10px] font-bold border border-slate-200 dark:border-slate-700">
+                        {qType}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-[10px] font-black">
+                        {qPriority}
+                      </span>
+                      {qMarks && (
+                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-800">
+                          {qMarks}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleToggleMistake}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs ${
+                        isSavedInMistake
+                          ? 'bg-amber-600 text-white border border-amber-600'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-amber-400 border border-slate-200 dark:border-slate-700'
+                      }`}
+                      title={isSavedInMistake ? 'Saved in Mistake Book' : 'Save to Mistake Book'}
+                    >
+                      {isSavedInMistake ? (
+                        <>
+                          <BookmarkCheck className="w-3.5 h-3.5 text-white" />
+                          <span>★ Saved in Mistake Book</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="w-3.5 h-3.5" />
+                          <span>☆ Save to Mistake Book</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
                 <div className="space-y-3 sm:space-y-4">
                   {section.items.map((item, itemIdx) => {
                     if (item.type === 'subtopic') {
@@ -794,6 +935,52 @@ export const NaturalNotebookViewer: React.FC<{
         })
       )}
 
+      {/* Theory Enhancement: Remember This, Common Mistake & Test Yourself */}
+      {(tabMode === 'notes' || tabMode === 'all') && (
+        <div className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 dark:text-amber-300 flex items-center gap-1.5 mb-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-600" />
+                <span>Remember This</span>
+              </span>
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                Always state physical laws and definitions verbatim using standard NCERT terminology. Bold key equations and enclose final numerical answers in boxes with correct SI units.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30">
+              <span className="text-[10px] font-black uppercase tracking-wider text-rose-900 dark:text-rose-300 flex items-center gap-1.5 mb-1.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                <span>Common Mistake</span>
+              </span>
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                Examiners deduct marks for missing SI unit conversions (e.g., forgetting to convert cm to meters or microcoulombs to Coulombs) and omitting arrowheads on ray/field diagrams.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5 mb-1.5">
+                <Award className="w-4 h-4 text-indigo-600" />
+                <span>Board Answer Tip</span>
+              </span>
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                CBSE evaluates answers step-by-step: 1 mark for formula & principle, 1-2 marks for substitution steps, and 1 mark for conclusion. Never skip writing the base equation.
+              </p>
+            </div>
+          </div>
+
+          {/* Embedded Test Yourself Practice Unit */}
+          <TestYourselfSection
+            chapterId={chapterId || 'p1'}
+            chapterTitle={chapterTitle || 'Chapter'}
+            subjectId={subjectId || 'physics'}
+            subjectName={subject}
+            theme={activeTheme}
+          />
+        </div>
+      )}
+
       {/* End of Notes Quick Action (When in Notes View) */}
       {tabMode === 'notes' && pyqSections.length > 0 && (
         <div className={`p-6 rounded-3xl border text-center ${themeClasses.card}`}>
@@ -936,7 +1123,10 @@ const ChapterView: React.FC<{
 
   useEffect(() => { 
     loadContent(false);
-  }, [loadContent]);
+    if (chapter && subject) {
+      recordChapterVisit(subject.id, chapter.id, chapter.title, subject.name);
+    }
+  }, [loadContent, chapter, subject]);
 
   const stopAudio = () => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -1030,6 +1220,12 @@ const ChapterView: React.FC<{
                 🎯 4-5 Solved PYQs
               </button>
             )}
+            <button 
+              onClick={() => setTabMode('test')}
+              className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${tabMode === 'test' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
+            >
+              <span>🎯 Test Yourself (3 Qs)</span>
+            </button>
             <button 
               onClick={() => setTabMode('books')}
               className={`px-3 lg:px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${tabMode === 'books' ? tabActiveStyle : 'opacity-70 hover:opacity-100'}`}
@@ -1208,7 +1404,7 @@ const ChapterView: React.FC<{
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
-                            {book.fileType.toUpperCase()} • {(book.fileSize / (1024 * 1024)).toFixed(1)} MB
+                            {(book.fileType || book.type || 'PDF').toUpperCase()} • {((Number(book.fileSize || book.size) || 0) / (1024 * 1024)).toFixed(1)} MB
                           </span>
                           <span className="text-[10px] text-slate-400 font-semibold">
                             {new Date(book.uploadDate).toLocaleDateString()}
@@ -1272,7 +1468,9 @@ const ChapterView: React.FC<{
               content={notesContent} 
               pyqContent={pyqContent}
               subject={subject.name}
+              subjectId={subject.id}
               chapterTitle={chapter.title}
+              chapterId={chapter.id}
               tabMode={tabMode}
               isRevision={isRevision}
               config={{ theme, font, size: fontSize, zoom: zoomPercent }}
@@ -1424,7 +1622,7 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({
                     {book.title}
                   </h4>
                   <p className="text-[10px] text-slate-500 truncate">
-                    {book.author ? `By ${book.author}` : `${(book.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    {book.author ? `By ${book.author}` : `${(((Number(book.fileSize || book.size) || 0) / (1024 * 1024))).toFixed(1)} MB`}
                   </p>
                 </div>
               </button>
@@ -1437,43 +1635,88 @@ const SubjectDashboard: React.FC<SubjectDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-20">
         {filteredChapters.map((chapter) => {
           const isRev = chapter.id.includes('_rev');
+          const meta = getChapterMeta(chapter.id, chapter.title);
+          const formulaList = getFormulasForChapter(chapter.title);
+          const progress = getChapterProgress(subject.id, chapter.id);
+
           return (
             <button
               key={chapter.id}
               onClick={() => setSelectedChapter(chapter)}
-              className={`group text-left p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between h-[230px] relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+              className={`group text-left p-5 sm:p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between min-h-[250px] relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
                 isRev 
                   ? 'bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-slate-900/10 dark:to-slate-900 border-amber-500/40 hover:border-amber-500' 
                   : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-amber-500/40'
               }`}
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
-                    isRev 
-                      ? 'bg-amber-600 text-white' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}>
-                    {isRev ? '⭐ Master Revision & Board Question Bank' : `Chapter ${chapter.id.replace(/[a-z_]/gi, '') || 'Module'}`}
-                  </span>
-                  <span className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 font-black text-sm transition-colors">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      isRev 
+                        ? 'bg-amber-600 text-white' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      {isRev ? '⭐ Master Revision' : `Chapter ${chapter.id.replace(/[a-z_]/gi, '') || 'Module'}`}
+                    </span>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                      meta.priority === 'High'
+                        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30'
+                        : meta.priority === 'Medium'
+                        ? 'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30'
+                        : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-400/30'
+                    }`}>
+                      {meta.priority} Priority
+                    </span>
+                  </div>
+                  <span className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 font-black text-sm transition-colors shrink-0">
                     Open →
                   </span>
                 </div>
-                <h3 className="text-base lg:text-lg font-black tracking-tight leading-snug mb-2 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+
+                <h3 className="text-base lg:text-lg font-black tracking-tight leading-snug mb-1.5 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
                   {chapter.title}
                 </h3>
-                <p className="text-xs opacity-75 font-medium line-clamp-2 leading-relaxed">
+                <p className="text-xs opacity-75 font-medium line-clamp-2 leading-relaxed mb-3">
                   {chapter.description}
                 </p>
+
+                {/* Compact Syllabus Stats */}
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] font-bold opacity-85 mb-3">
+                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    📚 {meta.topicsCount} Topics
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800">
+                    ⚡ {formulaList.length} Formulas
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800">
+                    🎯 {isRev ? '15+' : '4-5'} PYQs
+                  </span>
+                  {meta.derivationsCount > 0 && (
+                    <span className="px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800">
+                      🔬 {meta.derivationsCount} Derivations
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-bold opacity-80">
-                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
-                  <span>📖 Complete Notes</span>
+              {/* Activity & Mastery Status Footer */}
+              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-bold">
+                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  {progress.tested && progress.score ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1">
+                      <span>✓ Quiz:</span> {progress.score.correct}/{progress.score.total} Correct
+                    </span>
+                  ) : progress.read ? (
+                    <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                      <span>📖</span> Studied
+                    </span>
+                  ) : (
+                    <span className="opacity-50">Not Started</span>
+                  )}
                 </div>
-                <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-                  <span>{isRev ? '🎯 Board Question Bank' : '🎯 4-5 Solved PYQs'}</span>
+                <div className="text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase">
+                  NCERT 2026-27
                 </div>
               </div>
             </button>

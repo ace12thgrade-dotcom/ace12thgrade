@@ -25,7 +25,7 @@ export const FormulaCard: React.FC<FormulaCardProps> = ({ formula, theme = 'pape
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isDark = theme === 'dark';
+  const isDark = theme === 'slate';
   const isOxford = theme === 'oxford';
 
   return (
